@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600">
+  <rect width="600" height="600" fill="#F2F0EA"></rect>
+  <g stroke="#DDD9CF" stroke-width="1.5">
+    <path d="M0 150 H600"></path><path d="M0 300 H600"></path><path d="M0 450 H600"></path>
+    <path d="M150 0 V600"></path><path d="M300 0 V600"></path><path d="M450 0 V600"></path>
+  </g>
+  <rect x="150" y="150" width="46" height="300" fill="#191919"></rect>
+  <rect x="300" y="300" width="150" height="150" fill="#B9B5A9" opacity=".7"></rect>
+  <circle cx="450" cy="150" r="34" fill="none" stroke="#191919" stroke-width="3"></circle>
+  <rect x="196" y="150" width="10" height="10" fill="#191919"></rect>
+  <text x="466" y="86" font-family="monospace" font-size="14" letter-spacing="4" fill="#77746C" text-anchor="end">SIDE A · 45:00</text>
+  <text x="84" y="524" font-family="sans-serif" font-weight="bold" font-size="30" letter-spacing="1" fill="#191919">Quiet Machine</text>
+  <text x="84" y="552" font-family="monospace" font-size="14" letter-spacing="3" fill="#77746C">LOWW — MONOCHROME HOURS</text>
+</svg>

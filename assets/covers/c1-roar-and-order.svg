@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600">
+  <rect width="600" height="600" fill="#0B140C"></rect>
+  <g fill="#3DFF6E">
+    <rect x="220" y="150" width="40" height="40"></rect><rect x="260" y="150" width="40" height="40"></rect><rect x="300" y="150" width="40" height="40"></rect><rect x="340" y="150" width="40" height="40"></rect>
+    <rect x="180" y="190" width="40" height="40"></rect><rect x="380" y="190" width="40" height="40"></rect>
+    <rect x="180" y="230" width="40" height="40"></rect><rect x="260" y="230" width="40" height="40" fill="#0B140C"></rect><rect x="220" y="230" width="40" height="40"></rect><rect x="300" y="230" width="40" height="40"></rect><rect x="340" y="230" width="40" height="40"></rect><rect x="380" y="230" width="40" height="40"></rect>
+    <rect x="180" y="270" width="240" height="40"></rect>
+    <rect x="220" y="310" width="200" height="40"></rect>
+    <rect x="260" y="350" width="40" height="30"></rect><rect x="330" y="350" width="40" height="30"></rect>
+  </g>
+  <rect x="252" y="238" width="24" height="24" fill="#B7FFC2"></rect>
+  <g fill="#3DFF6E" opacity=".9">
+    <path d="M96 96 h30 v9 h-21 v21 h-9 Z"></path><path d="M504 96 h-30 v9 h21 v21 h9 Z"></path>
+    <path d="M96 504 h30 v-9 h-21 v-21 h-9 Z"></path><path d="M504 504 h-30 v-9 h21 v-21 h9 Z"></path>
+  </g>
+  <g opacity=".14" stroke="#3DFF6E" stroke-width="2">
+    <path d="M0 60 H600"></path><path d="M0 120 H600"></path><path d="M0 180 H600"></path><path d="M0 240 H600"></path><path d="M0 300 H600"></path><path d="M0 360 H600"></path><path d="M0 420 H600"></path><path d="M0 480 H600"></path><path d="M0 540 H600"></path>
+  </g>
+  <text x="300" y="446" font-family="monospace" font-size="24" letter-spacing="8" fill="#B7FFC2" text-anchor="middle">ROAR &amp; ORDER</text>
+  <text x="300" y="478" font-family="monospace" font-size="13" letter-spacing="4" fill="#5FA86C" text-anchor="middle">TINY ARMS BIG DREAMS · EXTINCT BANGERS</text>
+  <text x="300" y="540" font-family="monospace" font-size="12" letter-spacing="6" fill="#3DFF6E" text-anchor="middle" opacity=".8">▶ INSERT COIN TO PLAY</text>
+</svg>

@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600">
+  <defs><linearGradient id="sm-bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFE9F0"></stop><stop offset="1" stop-color="#FFE1C4"></stop></linearGradient></defs>
+  <rect width="600" height="600" fill="url(#sm-bg)"></rect>
+  <g fill="#FFFFFF" opacity=".9">
+    <ellipse cx="120" cy="150" rx="66" ry="24"></ellipse><ellipse cx="170" cy="162" rx="50" ry="20"></ellipse>
+    <ellipse cx="480" cy="420" rx="70" ry="24"></ellipse><ellipse cx="430" cy="432" rx="48" ry="19"></ellipse>
+  </g>
+  <circle cx="360" cy="250" r="96" fill="#FF9AD5"></circle>
+  <circle cx="330" cy="222" r="26" fill="#FFC7D6"></circle>
+  <circle cx="396" cy="284" r="16" fill="#FF7FBE"></circle>
+  <circle cx="352" cy="300" r="10" fill="#FFC7D6"></circle>
+  <g stroke-linecap="round">
+    <path d="M256 340 Q190 402 132 428" stroke="#FF8FAB" stroke-width="10" fill="none" stroke-dasharray="2 26"></path>
+    <path d="M292 372 Q240 430 196 466" stroke="#FFB25E" stroke-width="10" fill="none" stroke-dasharray="2 26"></path>
+    <path d="M226 300 Q160 348 104 366" stroke="#8BD595" stroke-width="10" fill="none" stroke-dasharray="2 26"></path>
+  </g>
+  <path d="M470 118 l6 17 17 6 -17 6 -6 17 -6 -17 -17 -6 17 -6 Z" fill="#FFFFFF"></path>
+  <path d="M84 528 L516 528" stroke="#EBC9B0" stroke-width="2"></path>
+  <text x="84" y="560" font-family="monospace" font-size="21" letter-spacing="5" fill="#5A2E1E">SUGAR METEOR</text>
+  <text x="84" y="584" font-family="monospace" font-size="13" letter-spacing="3" fill="#A6644B">PASTEL COMET · COTTON NOVA</text>
+</svg>

@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#101B2A"/><stop offset=".55" stop-color="#1B2A20"/><stop offset="1" stop-color="#0B120D"/></linearGradient>
+    <linearGradient id="fog" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#22402C" stop-opacity="0"/><stop offset="1" stop-color="#22402C" stop-opacity=".85"/></linearGradient>
+  </defs>
+  <rect width="1920" height="1080" fill="url(#sky)"/>
+  <circle cx="1430" cy="240" r="110" fill="#DCE8D2" opacity=".16"/>
+  <circle cx="1430" cy="240" r="76" fill="#DCE8D2" opacity=".2"/>
+  <g fill="#0E1A13">
+    <path d="M0 640 L210 430 L390 620 L560 470 L760 660 L960 500 L1180 680 L1400 520 L1620 690 L1920 560 L1920 1080 L0 1080 Z" opacity=".9"/>
+  </g>
+  <g fill="#132218">
+    <path d="M0 760 L260 600 L470 750 L700 620 L950 780 L1210 650 L1480 790 L1720 680 L1920 760 L1920 1080 L0 1080 Z"/>
+  </g>
+  <rect y="620" width="1920" height="460" fill="url(#fog)"/>
+  <g fill="#1E3526">
+    <path d="M140 1080 L200 830 L260 1080 Z"/><path d="M340 1080 L410 780 L480 1080 Z"/><path d="M620 1080 L680 850 L740 1080 Z"/>
+    <path d="M1120 1080 L1190 800 L1260 1080 Z"/><path d="M1420 1080 L1495 830 L1570 1080 Z"/><path d="M1700 1080 L1760 870 L1820 1080 Z"/>
+  </g>
+  <g opacity=".85">
+    <rect x="72" y="72" width="340" height="14" rx="7" fill="#0E1510"/><rect x="72" y="72" width="238" height="14" rx="7" fill="#5FBE71"/>
+    <rect x="72" y="98" width="340" height="10" rx="5" fill="#0E1510"/><rect x="72" y="98" width="120" height="10" rx="5" fill="#5B9CFF"/>
+    <circle cx="1786" cy="954" r="86" fill="#0E1510" opacity=".85"/><circle cx="1786" cy="954" r="86" fill="none" stroke="#3E5A3E" stroke-width="3"/>
+    <path d="M1786 890 L1786 1018 M1722 954 L1850 954" stroke="#3E5A3E" stroke-width="2"/><circle cx="1786" cy="954" r="7" fill="#5FBE71"/>
+    <circle cx="1806" cy="922" r="4" fill="#FFC94D"/><circle cx="1752" cy="978" r="4" fill="#FF7A6E"/>
+  </g>
+  <g font-family="monospace" font-size="20" fill="#8FA48A" opacity=".8">
+    <text x="72" y="140">LV 42 · FOREST OF FERNS</text>
+  </g>
+</svg>

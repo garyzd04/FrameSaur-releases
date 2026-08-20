@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600">
+  <defs><linearGradient id="fgf-sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2C4A2E"></stop><stop offset="1" stop-color="#16281A"></stop></linearGradient></defs>
+  <rect width="600" height="600" fill="url(#fgf-sky)"></rect>
+  <circle cx="390" cy="230" r="132" fill="#F3EFCF" opacity=".92"></circle>
+  <g stroke="#7FCB8B" stroke-width="9" fill="none" stroke-linecap="round">
+    <path d="M150 470 Q140 330 190 210"></path>
+  </g>
+  <g fill="#4CAF5E">
+    <ellipse cx="152" cy="404" rx="64" ry="17" transform="rotate(-28 152 404)"></ellipse>
+    <ellipse cx="216" cy="386" rx="60" ry="16" transform="rotate(16 216 386)"></ellipse>
+    <ellipse cx="142" cy="330" rx="58" ry="15" transform="rotate(-32 142 330)"></ellipse>
+    <ellipse cx="212" cy="312" rx="54" ry="14" transform="rotate(12 212 312)"></ellipse>
+    <ellipse cx="150" cy="262" rx="48" ry="13" transform="rotate(-36 150 262)"></ellipse>
+    <ellipse cx="212" cy="248" rx="44" ry="12" transform="rotate(8 212 248)"></ellipse>
+    <ellipse cx="176" cy="206" rx="34" ry="10" transform="rotate(-46 176 206)"></ellipse>
+  </g>
+  <g fill="#8BD595">
+    <ellipse cx="330" cy="452" rx="56" ry="14" transform="rotate(22 330 452)"></ellipse>
+    <ellipse cx="402" cy="428" rx="50" ry="13" transform="rotate(-10 402 428)"></ellipse>
+    <ellipse cx="356" cy="392" rx="44" ry="12" transform="rotate(30 356 392)"></ellipse>
+    <path d="M300 470 Q340 400 416 372" stroke="#3E9B4F" stroke-width="7" fill="none" stroke-linecap="round"></path>
+  </g>
+  <g fill="#22321F" opacity=".85">
+    <ellipse cx="452" cy="500" rx="9" ry="13" transform="rotate(-20 452 500)"></ellipse>
+    <ellipse cx="474" cy="494" rx="9" ry="14"></ellipse>
+    <ellipse cx="496" cy="500" rx="9" ry="13" transform="rotate(20 496 500)"></ellipse>
+    <path d="M474 512 Q492 514 490 530 Q488 544 474 545 Q460 544 458 530 Q456 514 474 512 Z"></path>
+  </g>
+  <path d="M84 528 L516 528" stroke="#3E5A3E" stroke-width="2"></path>
+  <text x="84" y="560" font-family="monospace" font-size="21" letter-spacing="5" fill="#D8F5DC">FERN GULLY FUNK</text>
+  <text x="84" y="584" font-family="monospace" font-size="13" letter-spacing="3" fill="#8FA48A">REX &amp; THE HERBIVORES · JURASSIC GROOVE</text>
+</svg>

@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600">
+  <defs>
+    <linearGradient id="ct-bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2A1656"></stop><stop offset="1" stop-color="#0D0722"></stop></linearGradient>
+    <linearGradient id="ct-tail" x1="1" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFFFFF"></stop><stop offset=".4" stop-color="#B78CFF"></stop><stop offset="1" stop-color="#B78CFF" stop-opacity="0"></stop></linearGradient>
+  </defs>
+  <rect width="600" height="600" fill="url(#ct-bg)"></rect>
+  <g fill="#FFFFFF">
+    <circle cx="80" cy="100" r="2.2"></circle><circle cx="180" cy="66" r="1.5"></circle><circle cx="520" cy="480" r="2.4"></circle>
+    <circle cx="470" cy="70" r="1.8"></circle><circle cx="66" cy="360" r="1.6"></circle><circle cx="250" cy="500" r="1.8"></circle>
+    <circle cx="540" cy="300" r="1.4"></circle><circle cx="130" cy="470" r="2"></circle><circle cx="360" cy="90" r="1.4"></circle>
+  </g>
+  <path d="M430 178 L96 470 L166 466 L438 208 L470 220 Z" fill="url(#ct-tail)" opacity=".85"></path>
+  <circle cx="438" cy="186" r="44" fill="#F1EBFF"></circle>
+  <circle cx="424" cy="174" r="12" fill="#FFFFFF"></circle>
+  <circle cx="452" cy="200" r="7" fill="#C9AFFF"></circle>
+  <ellipse cx="438" cy="196" rx="86" ry="20" fill="none" stroke="#FF8FD2" stroke-width="4" transform="rotate(-24 438 196)" opacity=".8"></ellipse>
+  <path d="M84 528 L516 528" stroke="#3A2670" stroke-width="2"></path>
+  <text x="84" y="560" font-family="monospace" font-size="21" letter-spacing="5" fill="#F1EBFF">COMET TAIL</text>
+  <text x="84" y="584" font-family="monospace" font-size="13" letter-spacing="3" fill="#A896D6">THE ASTEROIDZ · DEEP SKY CANDY</text>
+</svg>

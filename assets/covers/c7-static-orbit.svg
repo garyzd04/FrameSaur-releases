@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600">
+  <rect width="600" height="600" fill="#131316"></rect>
+  <g fill="#FFFFFF">
+    <circle cx="92" cy="88" r="2.4"></circle><circle cx="180" cy="52" r="1.6"></circle><circle cx="512" cy="96" r="2"></circle>
+    <circle cx="546" cy="210" r="1.5"></circle><circle cx="72" cy="300" r="1.8"></circle><circle cx="150" cy="512" r="2.2"></circle>
+    <circle cx="480" cy="540" r="1.6"></circle><circle cx="420" cy="60" r="1.4"></circle><circle cx="60" cy="430" r="1.5"></circle>
+  </g>
+  <circle cx="330" cy="290" r="128" fill="#EDEDED"></circle>
+  <path d="M330 162 a128 128 0 0 1 0 256 a172 128 20 0 0 0 -256 Z" fill="#B9B9BE" opacity=".55"></path>
+  <circle cx="286" cy="246" r="16" fill="#CFCFCF" opacity=".8"></circle>
+  <circle cx="368" cy="330" r="10" fill="#CFCFCF" opacity=".7"></circle>
+  <circle cx="322" cy="376" r="6" fill="#CFCFCF" opacity=".7"></circle>
+  <ellipse cx="330" cy="308" rx="196" ry="46" fill="none" stroke="#8E8E96" stroke-width="7" transform="rotate(-16 330 308)"></ellipse>
+  <path d="M118 470 L482 470" stroke="#3A3A40" stroke-width="2"></path>
+  <text x="118" y="510" font-family="monospace" font-size="22" letter-spacing="6" fill="#9A9AA2">STATIC ORBIT</text>
+  <text x="118" y="540" font-family="monospace" font-size="15" letter-spacing="4" fill="#5C5C63">GREY SATELLITE · 33 RPM</text>
+</svg>
