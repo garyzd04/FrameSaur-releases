@@ -4,7 +4,7 @@
    and the live version line from the public releases repo. No frameworks. */
 (function () {
   "use strict";
-  var CYCLE_SECONDS = 4, HERO_N = 8;
+  var CYCLE_SECONDS = 4, HERO_N = 9;
   var rm = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   var D = {
@@ -61,7 +61,7 @@
   }
 
   /* ---- widget layout cycle ---- */
-  var WSCALE = [1, 1, 1, 0.86];
+  var WSCALE = [1, 1, 1, 1]; // slot 3 was the tall story card (0.86); it cycles a Cat Nap portrait now
   function applyWidget() {
     $all("[data-widget-slot]").forEach(function (el) {
       var i = +el.getAttribute("data-widget-slot");
