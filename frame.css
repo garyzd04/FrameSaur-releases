@@ -308,7 +308,9 @@ button,input,select{font-family:inherit;color:inherit}button{cursor:pointer;back
 /* mono — photo-print art (grayscale + white mount), halftone band, registration corners, typewriter label.
    The grayscale filter is live-only; exports swap the art for a real grayscale copy (see captureFrame). */
 [data-theme="mono"] .art{border:5px solid var(--f-card);border-radius:6px;box-shadow:0 8px 22px rgba(0,0,0,.28)}
-[data-theme="mono"] .art img,[data-theme="mono"] .art .gen{filter:grayscale(1) contrast(1.05)}
+[data-theme="mono"] .art .gen{filter:grayscale(1) contrast(1.05)}
+/* Spotify covers are exempt from the grayscale — cover art may be resized but not modified */
+[data-theme="mono"]:not([data-artsrc="spotify"]) .art img{filter:grayscale(1) contrast(1.05)}
 /* mono exports: captureFrame swaps the drawn cover for a real grayscale copy (see js/export.js) — no CSS flatten needed since the covers became same-origin data URIs */
 .mono-halftone{left:0;right:0;bottom:0;height:34px;opacity:.16;z-index:1;
   background:radial-gradient(circle,var(--f-ink) 1.1px,transparent 1.4px) 0 0/7px 7px}
@@ -355,6 +357,9 @@ button,input,select{font-family:inherit;color:inherit}button{cursor:pointer;back
 @keyframes ambx{to{opacity:.4}}
 /* shape: art form + size (size only where the art is a free column) */
 .frame[data-art="round"] .art{border-radius:50%}
+/* the circle CROP is a modification; Spotify covers fall back to the default rounding */
+.frame[data-artsrc="spotify"][data-art="round"] .art{border-radius:14px}
+.frame[data-artsrc="spotify"][data-art="round"] .a-ring{border-radius:22px}
 .frame[data-art="rounded"] .art{border-radius:18px}
 .frame[data-art="square"] .art{border-radius:4px}
 .frame[data-layout="portrait"] .art-wrap{width:var(--f-art-w,76%)}
@@ -385,11 +390,19 @@ button,input,select{font-family:inherit;color:inherit}button{cursor:pointer;back
 .a-row[hidden]{display:none !important}
 .a-bars{display:none;height:100%;align-items:flex-end;gap:2px}
 .frame[data-astyle="bars"] .a-bars{display:flex}
-.a-bars i{flex:1;height:100%;min-width:2px;border-radius:2px 2px 1px 1px;transform-origin:bottom;transform:scaleY(.3);
+.a-bars b{flex:1;min-width:2px;position:relative;display:block;height:100%}
+.a-bars b i{position:absolute;inset:0;border-radius:2px 2px 1px 1px;transform-origin:bottom;transform:scaleY(.3);
   background:linear-gradient(180deg,var(--f-accent2),var(--f-accent))}
+/* falling peak caps — positioned at the row floor and lifted by transform only (compositor-friendly) */
+.a-bars b u{position:absolute;left:0;right:0;bottom:0;height:2px;border-radius:1px;background:var(--f-accent2);opacity:.9;transform:translateY(0)}
 .a-wave{display:none;width:100%;height:100%}
 .frame[data-astyle="wave"] .a-wave{display:block}
 .a-wave polyline{fill:none;stroke:var(--f-accent);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke}
+/* export attribution: Policy II.4 wants metadata/art accompanied by a link back. The footer exists only
+   inside captureFrame's restores (added when a Spotify track is loaded and the scan code is off — the
+   scannable IS a link-back). Monochrome icon per brand rules; black/white picked by card luminance in JS. */
+.sp-attr{display:flex;align-items:center;gap:6px;justify-content:center;padding-top:8px;font-size:10.5px;font-weight:700;letter-spacing:.02em;opacity:.85}
+.sp-attr svg{width:15px;height:15px;flex:none}
 /* pulse ring: a border ring around the art (never a box-shadow ring — html2canvas paints those as a veil) */
 .a-ring{position:absolute;inset:-7px;border-radius:22px;border:2.5px solid var(--f-accent);opacity:.5;pointer-events:none;z-index:2}
 .a-ring[hidden]{display:none}

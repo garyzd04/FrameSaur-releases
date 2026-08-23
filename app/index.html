@@ -733,7 +733,9 @@ body.sp-live #trackLiveNote{display:block}
 /* mono — photo-print art (grayscale + white mount), halftone band, registration corners, typewriter label.
    The grayscale filter is live-only; exports swap the art for a real grayscale copy (see captureFrame). */
 [data-theme="mono"] .art{border:5px solid var(--f-card);border-radius:6px;box-shadow:0 8px 22px rgba(0,0,0,.28)}
-[data-theme="mono"] .art img,[data-theme="mono"] .art .gen{filter:grayscale(1) contrast(1.05)}
+[data-theme="mono"] .art .gen{filter:grayscale(1) contrast(1.05)}
+/* Spotify covers are exempt from the grayscale — cover art may be resized but not modified */
+[data-theme="mono"]:not([data-artsrc="spotify"]) .art img{filter:grayscale(1) contrast(1.05)}
 /* mono exports: captureFrame swaps the drawn cover for a real grayscale copy (see js/export.js) — no CSS flatten needed since the covers became same-origin data URIs */
 .mono-halftone{left:0;right:0;bottom:0;height:34px;opacity:.16;z-index:1;
   background:radial-gradient(circle,var(--f-ink) 1.1px,transparent 1.4px) 0 0/7px 7px}
@@ -780,6 +782,9 @@ body.sp-live #trackLiveNote{display:block}
 @keyframes ambx{to{opacity:.4}}
 /* shape: art form + size (size only where the art is a free column) */
 .frame[data-art="round"] .art{border-radius:50%}
+/* the circle CROP is a modification; Spotify covers fall back to the default rounding */
+.frame[data-artsrc="spotify"][data-art="round"] .art{border-radius:14px}
+.frame[data-artsrc="spotify"][data-art="round"] .a-ring{border-radius:22px}
 .frame[data-art="rounded"] .art{border-radius:18px}
 .frame[data-art="square"] .art{border-radius:4px}
 .frame[data-layout="portrait"] .art-wrap{width:var(--f-art-w,76%)}
@@ -810,11 +815,19 @@ body.sp-live #trackLiveNote{display:block}
 .a-row[hidden]{display:none !important}
 .a-bars{display:none;height:100%;align-items:flex-end;gap:2px}
 .frame[data-astyle="bars"] .a-bars{display:flex}
-.a-bars i{flex:1;height:100%;min-width:2px;border-radius:2px 2px 1px 1px;transform-origin:bottom;transform:scaleY(.3);
+.a-bars b{flex:1;min-width:2px;position:relative;display:block;height:100%}
+.a-bars b i{position:absolute;inset:0;border-radius:2px 2px 1px 1px;transform-origin:bottom;transform:scaleY(.3);
   background:linear-gradient(180deg,var(--f-accent2),var(--f-accent))}
+/* falling peak caps — positioned at the row floor and lifted by transform only (compositor-friendly) */
+.a-bars b u{position:absolute;left:0;right:0;bottom:0;height:2px;border-radius:1px;background:var(--f-accent2);opacity:.9;transform:translateY(0)}
 .a-wave{display:none;width:100%;height:100%}
 .frame[data-astyle="wave"] .a-wave{display:block}
 .a-wave polyline{fill:none;stroke:var(--f-accent);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke}
+/* export attribution: Policy II.4 wants metadata/art accompanied by a link back. The footer exists only
+   inside captureFrame's restores (added when a Spotify track is loaded and the scan code is off — the
+   scannable IS a link-back). Monochrome icon per brand rules; black/white picked by card luminance in JS. */
+.sp-attr{display:flex;align-items:center;gap:6px;justify-content:center;padding-top:8px;font-size:10.5px;font-weight:700;letter-spacing:.02em;opacity:.85}
+.sp-attr svg{width:15px;height:15px;flex:none}
 /* pulse ring: a border ring around the art (never a box-shadow ring — html2canvas paints those as a veil) */
 .a-ring{position:absolute;inset:-7px;border-radius:22px;border:2.5px solid var(--f-accent);opacity:.5;pointer-events:none;z-index:2}
 .a-ring[hidden]{display:none}
@@ -1116,6 +1129,10 @@ body .mini-btn.primary:hover{background:var(--leaf-hover,var(--leaf-dark))}
 .cm-stk-tray button{width:52px;height:52px;border:1.5px solid var(--line);border-radius:10px;background:var(--panel);cursor:pointer;padding:5px}
 .cm-stk-tray button:hover{border-color:var(--leaf)}
 .cm-stk-tray img{width:100%;height:100%;object-fit:contain}
+/* Spotify attribution mark in the Now playing panel (Policy II.4.a — chrome, not the card) */
+.sp-mark{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:800;color:var(--ink-soft);margin-left:auto;letter-spacing:.03em}
+.sp-mark svg{width:13px;height:13px}
+.sec-title{display:flex;align-items:center;gap:6px}
 
 .tb-tabs{display:flex;gap:4px;background:var(--panel-2);border:1px solid var(--line);border-radius:11px;padding:4px;margin-bottom:10px}
 .tb-tabs button{flex:1;padding:7px 4px;border-radius:8px;font-weight:800;font-size:12px;color:var(--ink-soft)}
@@ -1216,7 +1233,7 @@ details.guide code{background:#fff;border:1px solid var(--line);border-radius:5p
 .hk-box{flex:1;text-align:center;font-weight:800}
 .hk-box.capturing{border-color:var(--leaf);background:var(--leaf-tint)}
 
-.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(10px);background:var(--ink);color:#fff;font-size:13px;font-weight:700;padding:10px 16px;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.3);opacity:0;pointer-events:none;transition:opacity .2s ease,transform .2s ease;z-index:50;max-width:min(480px,90vw);text-align:center}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(10px);background:var(--ink);color:#fff;font-size:13px;font-weight:700;padding:10px 16px;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.3);opacity:0;pointer-events:none;transition:opacity .2s ease,transform .2s ease;z-index:200;max-width:min(480px,90vw);text-align:center}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
 /* ---------- desktop-app widget mode ---------- */
@@ -1723,7 +1740,7 @@ body[data-studio="blackcat"] .home[data-deco="on"] .hm::after{
     <!-- ======= right: CONTENT ======= -->
     <aside class="side side-right">
       <section class="sec">
-        <div class="sec-title">Now playing</div>
+        <div class="sec-title">Now playing <span class="sp-mark" title="Playback data and artwork supplied by Spotify"><svg viewBox="0 0 168 168" aria-hidden="true"><path fill="#1DB954" d="M83.996.277C37.747.277.253 37.77.253 84.019c0 46.251 37.494 83.741 83.743 83.741 46.254 0 83.744-37.49 83.744-83.741 0-46.246-37.49-83.738-83.744-83.742zm38.404 120.78a5.217 5.217 0 0 1-7.18 1.73c-19.662-12.01-44.414-14.73-73.564-8.07a5.222 5.222 0 0 1-6.249-3.93 5.213 5.213 0 0 1 3.926-6.25c31.9-7.291 59.263-4.15 81.337 9.34 2.46 1.51 3.24 4.72 1.73 7.18zm10.25-22.805c-1.89 3.075-5.91 4.045-8.98 2.155-22.51-13.839-56.823-17.846-83.448-9.764-3.453 1.043-7.1-.903-8.148-4.35a6.538 6.538 0 0 1 4.354-8.143c30.413-9.228 68.222-4.758 94.072 11.127 3.07 1.89 4.04 5.91 2.15 8.976v-.001zm.88-23.744c-26.99-16.031-71.52-17.505-97.289-9.684-4.138 1.255-8.514-1.081-9.768-5.219a7.835 7.835 0 0 1 5.221-9.771c29.581-8.98 78.756-7.245 109.83 11.202a7.823 7.823 0 0 1 2.74 10.733c-2.2 3.722-7.02 4.949-10.734 2.739z"/></svg> Spotify</span></div>
         <div id="spBody"></div>
         <div id="spExtras" hidden>
           <div class="field vol-field"><label for="sp-vol">Volume <span id="sp-vol-val"></span> <button type="button" class="link-btn" id="sp-mute" title="Mute / restore">🔊</button></label>
@@ -3436,6 +3453,14 @@ function bgReady(){ // export waits for a pending background image (resolved ins
 const A_BAR_N=24;
 const A_POSE=[.22,.34,.5,.66,.78,.86,.72,.58,.66,.8,.9,.74,.6,.7,.84,.66,.52,.62,.74,.58,.44,.34,.26,.2]; // the "fixed pleasant pose" for exports / fx-off / reduced motion
 let A_SUB=null; const A_LAST=new Float32Array(A_BAR_N).fill(-1);
+/* Paint-time shaping ONLY — the bus values (AUDIO.bands/low/mid/high/level/beat) are untouched, so the
+   reactions engine and every other consumer behave exactly as before. Real music parks the raw bands in
+   the 0.3–0.7 mid-range, which is why the old linear map looked polite instead of alive:
+   - A_CEIL: slow-decay auto-gain (any track fills the range; the 0.34 floor keeps silence silent)
+   - gamma 1.45: deepens valleys, sharpens peaks
+   - A_CAP: classic falling peak caps, quantized like the bars so quiet passages skip the writes */
+let A_CEIL=0.34, A_LCEIL=0.3;
+const A_CAP=new Float32Array(A_BAR_N).fill(0), A_CLAST=new Float32Array(A_BAR_N).fill(-1);
 function applyAudio(){
   const row=$("audioRow"), ring=$("aRing"); if(!row) return;
   const style=(typeof audioStyle==="function")?audioStyle():"none";
@@ -3444,7 +3469,8 @@ function applyAudio(){
   if(style==="none") delete frame.dataset.astyle;
   const bars=$("aBars");
   if(bars && bars.dataset.built!=="1"){ // build the 24 bars once
-    bars.innerHTML=""; for(let i=0;i<A_BAR_N;i++) bars.appendChild(document.createElement("i"));
+    bars.innerHTML=""; for(let i=0;i<A_BAR_N;i++){ const w=document.createElement("b");
+      w.appendChild(document.createElement("i")); w.appendChild(document.createElement("u")); bars.appendChild(w); }
     bars.dataset.built="1";
   }
   row.hidden=!(on && (style==="bars"||style==="wave"));
@@ -3457,27 +3483,38 @@ function applyAudio(){
 function audioPaint(a){
   const style=frame.dataset.astyle;
   if(!style) return;
+  let peak=0; for(let i=0;i<A_BAR_N;i++){ const b=a.bands[i]||0; if(b>peak) peak=b }
+  A_CEIL=Math.max(peak, A_CEIL*0.995, 0.34);
+  const shape=b=>Math.pow(Math.min(1,(b||0)/A_CEIL),1.45);
   if(style==="bars"){
     const bars=$("aBars"); if(!bars) return;
-    const kids=bars.children;
+    const kids=bars.children, H=bars.clientHeight||18;
     for(let i=0;i<kids.length;i++){
-      const v=Math.round((0.06+(a.bands[i]||0)*0.94)*50)/50; // quantized to 2% steps: skips the write entirely
-      if(A_LAST[i]===v) continue;                            // during quiet passages, which is most of the time
-      A_LAST[i]=v;
-      kids[i].style.transform="scaleY("+v+")";
+      const sv=shape(a.bands[i]);
+      const v=Math.round((0.05+sv*0.95)*50)/50;              // quantized to 2% steps: skips the write entirely
+      if(A_LAST[i]!==v){                                     // during quiet passages, which is most of the time
+        A_LAST[i]=v; kids[i].firstChild.style.transform="scaleY("+v+")";
+      }
+      A_CAP[i]=Math.max(v, A_CAP[i]-0.033);                  // caps fall the full row in ~1s at 30Hz
+      const c=Math.round(A_CAP[i]*50)/50;
+      if(A_CLAST[i]!==c){
+        A_CLAST[i]=c; kids[i].lastChild.style.transform="translateY(-"+Math.round(c*(H-2))+"px)";
+      }
     }
   } else if(style==="wave"){
     const line=$("aWaveLine"); if(!line) return;
     let pts="";
     for(let i=0;i<A_BAR_N;i++){
-      const x=(i/(A_BAR_N-1))*100, y=12-((a.bands[i]||0)-0.5)*20;
+      const x=(i/(A_BAR_N-1))*100, y=12-(shape(a.bands[i])-0.5)*20;
       pts+=(i?" ":"")+x.toFixed(1)+","+Math.max(1,Math.min(23,y)).toFixed(1);
     }
     line.setAttribute("points",pts);
   } else if(style==="ring"){
     const ring=$("aRing"); if(!ring) return;
-    ring.style.transform="scale("+(1+(a.low||0)*0.09).toFixed(3)+")";
-    ring.style.opacity=(0.35+(a.level||0)*0.6).toFixed(2);
+    A_LCEIL=Math.max(a.level||0, A_LCEIL*0.995, 0.3);
+    const nl=Math.min(1,(a.level||0)/A_LCEIL);
+    ring.style.transform="scale("+(1+(a.low||0)*0.09+nl*0.03).toFixed(3)+")";
+    ring.style.opacity=(0.3+nl*0.65).toFixed(2);
   }
   if(typeof AUDIO!=="undefined" && AUDIO.prefs && frame.dataset.theme==="dino"){
     frame.style.setProperty("--bop", (-(a.beat||0)*9).toFixed(2)+"px");
@@ -3487,11 +3524,12 @@ let A_FORCE_POSE=false;
 function audioPose(){ // the static look: exports, fx-off, reduced motion, and "enabled but not started yet"
   const style=frame.dataset.astyle;
   const bars=$("aBars");
-  if(bars){ const kids=bars.children;
+  if(bars){ const kids=bars.children, H=bars.clientHeight||18;
     for(let i=0;i<kids.length;i++){
-      kids[i].style.transform="scaleY("+A_POSE[i].toFixed(3)+")";
-      kids[i].style.height="";
-      A_LAST[i]=-1; // the next live frame must write again
+      const fill=kids[i].firstChild, cap=kids[i].lastChild;
+      if(fill){ fill.style.transform="scaleY("+A_POSE[i].toFixed(3)+")"; fill.style.height="" }
+      if(cap && cap!==fill){ cap.style.transform="translateY(-"+Math.round(A_POSE[i]*(H-2))+"px)" }
+      A_LAST[i]=-1; A_CLAST[i]=-1; A_CAP[i]=A_POSE[i]; // the next live frame must write again
     }
   }
   const line=$("aWaveLine");
@@ -3508,11 +3546,17 @@ function audioExportPose(){
   const bars=$("aBars"); if(!bars) return ()=>{};
   const kids=bars.children, h=bars.clientHeight||18, saved=[];
   for(let i=0;i<kids.length;i++){
-    saved.push([kids[i].style.transform, kids[i].style.height]);
-    kids[i].style.transform="none";
-    kids[i].style.height=Math.max(2,Math.round(A_POSE[i]*h))+"px";
+    const fill=kids[i].firstChild, cap=kids[i].lastChild;
+    saved.push([fill.style.transform, fill.style.height, cap.style.transform, cap.style.bottom]);
+    fill.style.transform="none";
+    fill.style.height=Math.max(2,Math.round(A_POSE[i]*h))+"px";
+    /* caps go in as literal offsets too — html2canvas's transform handling is its weakest area */
+    cap.style.transform="none";
+    cap.style.bottom=Math.round(A_POSE[i]*(h-2))+"px";
   }
-  return ()=>{ for(let i=0;i<kids.length;i++){ kids[i].style.transform=saved[i][0]; kids[i].style.height=saved[i][1] } };
+  return ()=>{ for(let i=0;i<kids.length;i++){ const fill=kids[i].firstChild, cap=kids[i].lastChild;
+    fill.style.transform=saved[i][0]; fill.style.height=saved[i][1];
+    cap.style.transform=saved[i][2]; cap.style.bottom=saved[i][3]||""; } };
 }
 
 /* ================= RENDER: LEFT PANEL ================= */
@@ -3696,6 +3740,9 @@ function renderCovers(){
 }
 function renderArt(){
   const img=$("artImg"), gen=$("artGen");
+  /* Spotify-sourced covers must render UNMODIFIED (Developer Terms IV.2.1 allows size adjustment only):
+     the attribute gates mono's grayscale, the circle crop, and the blurred backdrop in CSS/JS below. */
+  if(state.track.artSpotify) frame.dataset.artsrc="spotify"; else delete frame.dataset.artsrc;
   if(state.track.upload){ img.src=state.track.upload; img.style.display="block"; gen.style.display="none"; }
   else { img.style.display="none"; gen.style.display="block"; gen.className="gen "+state.track.cover; }
   if(!IS_WIDGET) sampleArtColor(state.track.upload);
@@ -3735,6 +3782,11 @@ function updateAmbient(){
   const el=$("ambientBg"); if(!el) return;
   const bg=themeDef().layers.background;
   const themed=bg.kind==="artblur"; // the artblur background kind = the ambient backdrop, always on for this theme
+  /* The backdrop is background DECORATION while the untouched cover renders beside it — Spotify's own
+     clients blur covers into backgrounds exactly like this, so the modified-artwork rule is read as
+     binding the artwork's own presentation (mono grayscale, circle crop — those exemptions stay),
+     not derived washes behind the card. Gating it on artSpotify killed the feature for every live
+     listener, which is everyone. */
   const want=(state.toggles.ambient===true||themed) && !!state.track.upload;
   frame.classList.toggle("has-ambient",want);
   // themed blur can tune the veil; the plain toggle keeps the classic .58 via the CSS fallback
@@ -4736,7 +4788,7 @@ $("rng-progress").addEventListener("input",e=>{
 $("in-upload").addEventListener("change",e=>{
   const f=e.target.files[0]; if(!f) return;
   const rd=new FileReader();
-  rd.onload=()=>{state.track.upload=rd.result;renderCovers();renderArt()};
+  rd.onload=()=>{state.track.upload=rd.result;state.track.artSpotify=false;renderCovers();renderArt()};
   rd.readAsDataURL(f);
 });
 /* studio appearance: Light / Dark / Auto (Auto follows Windows via prefers-color-scheme, live),
@@ -4816,7 +4868,9 @@ $("btn-shuffle").addEventListener("click",()=>{
 document.querySelectorAll("#layoutSeg button").forEach(b=>
   b.addEventListener("click",()=>{state.layout=b.dataset.layout;applyLayout()}));
 [["scan","chk-scan"],["deco","chk-deco"],["progress","chk-progress"],["controls","chk-controls"],["album","chk-album"],["fx","chk-fx"],["lyrics","chk-lyrics"],["next","chk-next"],["ambient","chk-ambient"]]
-  .forEach(([k,id])=>$(id).addEventListener("change",e=>{state.toggles[k]=e.target.checked;applyToggles()}));
+  .forEach(([k,id])=>$(id).addEventListener("change",e=>{state.toggles[k]=e.target.checked;applyToggles();
+    // Up next used to show NOTHING for up to 30s after toggling on — fetch immediately, with feedback on failure
+    if(k==="next"&&e.target.checked&&typeof spFetchNext==="function") spFetchNext(true,true);}));
 $("rng-size").addEventListener("input",e=>{
   const s=getSticker(state.selected); if(!s)return;
   s.size=+e.target.value; stickerEl(s.id).style.setProperty("--s",s.size+"px");
@@ -5330,6 +5384,7 @@ async function spExplain(r,ctx){
   if(r.status===401) return ctx==="control" ? "Reconnect Spotify to enable the buttons (Disconnect → Connect — new permission)." : "Spotify session expired — Disconnect and Connect again.";
   if(r.status===429) return "Spotify is rate-limiting requests — easing off for a moment.";
   if(r.status>=500) return "Spotify is having trouble right now ("+r.status+") — will keep retrying.";
+  if(r.status===403) return "Spotify refused (403"+(msg?": "+msg.slice(0,80):"")+"). Usual causes: this Spotify account isn’t added under the app’s User Management in the developer dashboard, or — since March 2026 — the app’s OWNER needs an active Premium subscription for the app to work at all.";
   return "Spotify error ("+r.status+(msg?": "+msg.slice(0,80):"")+")";
 }
 function authExplain(err){ // OAuth-time failures (dashboard misconfig, mostly)
@@ -5339,6 +5394,7 @@ function authExplain(err){ // OAuth-time failures (dashboard misconfig, mostly)
   if(/access_denied/.test(t)) return "You cancelled the Spotify approval — hit Connect again when ready.";
   if(/not registered|user may not/.test(t)) return "This Spotify account isn’t on the app’s allow-list yet — the app owner adds you under User Management in the dashboard.";
   if(/invalid_grant|expired/.test(t)) return "That sign-in attempt expired — press Connect again.";
+  if(/403/.test(t)) return "Spotify refused the sign-in (403). Two usual causes: this account isn’t added under the app’s User Management in the developer dashboard, or the app’s owner doesn’t have Premium (required for every dev-mode app since March 2026).";
   return "Couldn’t finish connecting: "+String(err||"unknown error").slice(0,120);
 }
 function toast(msg, ms=3200){
@@ -5423,7 +5479,15 @@ async function spSend(method,path){
   if(r.status===401){ SP.tokens.exp=0; tok=await spFreshToken(); r=await go(tok) }
   return r;
 }
-function spDisconnect(){
+async function spDisconnect(){
+  /* Developer Policy I.1.b: when a user disconnects, the app must delete their data. The listening log is
+     the user's OWN data on their OWN machine, so this is an offer rather than a silent wipe — declining is
+     itself "expressing an intent" to keep it, and reconnecting later resumes cleanly either way. */
+  if (typeof statsWipe === "function"){
+    if (confirm("Also delete the listening history stored on this PC?\n\nSpotify's policy asks apps to remove your data when you disconnect. Cancel keeps it — reconnecting later picks up where you left off.")){
+      try{ await statsWipe(); if (typeof homeRender === "function") homeRender(); }catch(e){}
+    }
+  }
   SP.tokens=null; safeStore.del("fs_tokens"); spSetLive(false);
   SP.uri=null; SP.playing=null; setRealScan(null); statusMsg="";
   renderSpotify(); toast("Disconnected. To fully revoke access: spotify.com/account/apps",4500);
@@ -5432,9 +5496,13 @@ function spDisconnect(){
 async function spSyncNow(quiet){
   try{
     let r=null;
+    /* the latch HEALS: dev-mode's allow-list is enforced per REQUEST, so being added to User Management
+       makes an EXISTING token start working — without this probe, everything canReadState gates (the
+       queue, shuffle/repeat state) stayed dead until an app restart. One retry every 2 minutes. */
+    if(!SP.canReadState && SP.readRetryAt && Date.now()>SP.readRetryAt) SP.canReadState=true;
     if(SP.canReadState){
       r=await spGet("/me/player"); // full playback state: also carries shuffle_state / repeat_state
-      if(r.status===401||r.status===403) SP.canReadState=false; // token predates the read scope
+      if(r.status===401||r.status===403){ SP.canReadState=false; SP.readRetryAt=Date.now()+120000 } // token predates the read scope — OR the account wasn't on the app's allow-list yet
     }
     if(!SP.canReadState) r=await spGet("/me/player/currently-playing");
     if(r.status===204){ statusMsg="Nothing playing — press play in Spotify, then Sync."; SP.playing=null;
@@ -5497,11 +5565,12 @@ async function setLiveArt(url){
     const r=await fetch(url,{mode:"cors"}); if(!r.ok) throw 0;
     const blob=await r.blob();
     const durl=await new Promise(res=>{const fr=new FileReader();fr.onload=()=>res(fr.result);fr.readAsDataURL(blob)});
-    state.track.upload=durl; SP.artTainted=false;
+    state.track.upload=durl; state.track.artSpotify=true; SP.artTainted=false;
   }catch(e){
     let d=null; if(EL){ try{ d=await EL.fetchDataURL(url) }catch(_){} }
     if(d){ state.track.upload=d; SP.artTainted=false }
     else { state.track.upload=url; SP.artTainted=true }
+    state.track.artSpotify=true;
   }
   renderCovers(); renderArt();
 }
@@ -5600,13 +5669,21 @@ let MIRROR_URI=null; // widget/overlay: the studio's SP.uri as mirrored by the s
 
 /* ================= UP NEXT (GET /me/player/queue → state.track.next, mirrored via the snapshot) ================= */
 let NEXT_T=null, NEXT_LAST=0;
-async function spFetchNext(force){
-  if(IS_WIDGET||!SP.tokens||!SP.canReadState) return;
+async function spFetchNext(force,announce){
+  if(IS_WIDGET||!SP.tokens) return;
+  if(!SP.canReadState){
+    if(!announce) return;
+    SP.canReadState=true;    // an explicit toggle-on is an explicit ask — probe right now instead of silently doing nothing
+  }
   if(!force && Date.now()-NEXT_LAST<25000) return; // queue can change without a track change — refresh every ~30s
   NEXT_LAST=Date.now();
   try{
     const r=await spGet("/me/player/queue");
-    if(!r.ok) return; // 401/403 on old tokens, 404 no device: just leave whatever we had
+    if(!r.ok){ // 401/403 on old tokens, 404 no device: leave whatever we had — but say WHY when the user just asked
+      if(announce) toast(r.status===404 ? "No active Spotify device — press play in Spotify once and try again."
+        : "Spotify wouldn't share the queue ("+r.status+") — it may need Premium, or the session needs a reconnect.", 4500);
+      return;
+    }
     const d=await r.json();
     const q=(d&&Array.isArray(d.queue))?d.queue.find(x=>x&&x.type==="track"&&x.name):null;
     setNext(q?{title:q.name, artist:(q.artists||[]).map(a=>a.name).join(", ")}:null);
@@ -7836,6 +7913,12 @@ function cmStkPickToggle(){
 }
 
 async function cmStkPublishSrc(src, name){
+  if (!SB || !CM_SESSION){ toast("Sign in with Discord to publish"); return false }
+  const dup = await SB.from("stickers").select("id,status").eq("owner", CM_SESSION.user.id).eq("name", String(name).slice(0, 40)).neq("status", "rejected").limit(1);
+  if (dup.data && dup.data.length){
+    toast("You already published a sticker named “" + name + "” (" + dup.data[0].status + ") — remove it first, or pick another name.", 5000);
+    return false;
+  }
   /* the tray already re-encoded this through a canvas at import time — that is the sanitiser */
   const blob = await (await fetch(src)).blob();
   if (blob.size > 204800){ toast("That sticker is over the 200KB cap"); return false }
@@ -8437,6 +8520,19 @@ async function captureFrame(scale){
   try{ if(typeof bgReady==="function") await bgReady() }catch(e){} // a theme background image may still be resolving from the asset store
   frame.classList.add("exporting");
   const restores=[];
+  /* Attribution + link-back ride every export of a real Spotify track (Policy II.4). Skipped when the scan
+     code is showing — the scannable is already a Spotify link. Removed in finally with everything else. */
+  if(state.track.uri && /^spotify:track:/.test(state.track.uri) && !(state.toggles.scan && $("scanRow").classList.contains("has-real"))){
+    const id=state.track.uri.slice(14);
+    const a=document.createElement("div"); a.className="sp-attr";
+    const lum=(h=>{const m=/^#?([0-9a-f]{6})$/i.exec(String(h).trim());if(!m)return 0.5;const n=parseInt(m[1],16);
+      return (0.2126*(n>>16&255)+0.7152*(n>>8&255)+0.0722*(n&255))/255})(getComputedStyle(frame).getPropertyValue("--f-bg1"));
+    a.style.color=lum>0.55?"#000000":"#FFFFFF";
+    a.innerHTML='<svg viewBox="0 0 168 168" aria-hidden="true"><path fill="currentColor" d="M83.996.277C37.747.277.253 37.77.253 84.019c0 46.251 37.494 83.741 83.743 83.741 46.254 0 83.744-37.49 83.744-83.741 0-46.246-37.49-83.738-83.744-83.742zm38.404 120.78a5.217 5.217 0 0 1-7.18 1.73c-19.662-12.01-44.414-14.73-73.564-8.07a5.222 5.222 0 0 1-6.249-3.93 5.213 5.213 0 0 1 3.926-6.25c31.9-7.291 59.263-4.15 81.337 9.34 2.46 1.51 3.24 4.72 1.73 7.18zm10.25-22.805c-1.89 3.075-5.91 4.045-8.98 2.155-22.51-13.839-56.823-17.846-83.448-9.764-3.453 1.043-7.1-.903-8.148-4.35a6.538 6.538 0 0 1 4.354-8.143c30.413-9.228 68.222-4.758 94.072 11.127 3.07 1.89 4.04 5.91 2.15 8.976v-.001zm.88-23.744c-26.99-16.031-71.52-17.505-97.289-9.684-4.138 1.255-8.514-1.081-9.768-5.219a7.835 7.835 0 0 1 5.221-9.771c29.581-8.98 78.756-7.245 109.83 11.202a7.823 7.823 0 0 1 2.74 10.733c-2.2 3.722-7.02 4.949-10.734 2.739z"/></svg>'
+      +'<span>Listen on Spotify · open.spotify.com/track/'+id.replace(/[^A-Za-z0-9]/g,"")+'</span>';
+    frame.querySelector(".frame-inner").appendChild(a);
+    restores.push(()=>{ try{ a.remove() }catch(e){} });
+  }
   /* Reactions render their NEUTRAL pose: every --r-* at 0. They ride audio's tick, which audioFreeze stops —
      but a stopped tick holds the last value rather than resting, so this has to zero them explicitly. */
   if(typeof rxFreeze==="function"){ rxFreeze(true); restores.push(()=>{ try{ rxFreeze(false) }catch(e2){} }) }
@@ -8475,7 +8571,7 @@ async function captureFrame(scale){
     restores.push(()=>{g.className=oldClass; g.style.display="none"; im.style.display="block"});
     toast("Album art couldn't be embedded (CORS) — the PNG uses a built-in cover",4200);
   }
-  if(frame.dataset.theme==="mono"){ // html2canvas drops CSS filters: swap in a real grayscale copy of the cover
+  if(frame.dataset.theme==="mono" && frame.dataset.artsrc!=="spotify"){ // html2canvas drops CSS filters: swap in a real grayscale copy — but NEVER of a Spotify cover (modified-artwork rule)
     const im=$("artImg");
     if(im && im.style.display!=="none" && im.src && !SP.artTainted){
       const src=im.src, g=await grayscaleDataURL(src);
