@@ -20,17 +20,19 @@
   function $all(sel) { return Array.prototype.slice.call(document.querySelectorAll(sel)); }
 
   /* ---- theme fans ---- */
+  /* Two modes, one state. Desktop: the three variant cards fan into a stack and the front one rotates.
+     Mobile (≤940px, the media query turns .ghosts into a scroll-snap ROW): these fan styles must never
+     land — they are INLINE, so they beat the stylesheet, and the row ends up with two tilted quarter-
+     opacity cards drifting every 4s. In row mode the pills scroll the row, a swipe drives the labels,
+     and the auto-cycle keeps its hands off entirely. */
+  var MOBILE = window.matchMedia ? matchMedia("(max-width:940px)") : { matches: false };
   var GHOST = [
     "opacity:1;transform:translate(0,0) scale(1) rotate(0deg);z-index:3",
     "opacity:.25;transform:translate(10%,-4.5%) scale(.92) rotate(2.5deg);z-index:1",
     "opacity:.25;transform:translate(-10%,4.5%) scale(.92) rotate(-2.5deg);z-index:1"
   ];
-  function applyThemeFan(t) {
+  function fanLabels(t) {
     var a = v[t];
-    $all('[data-ghost-slot^="' + t + ':"]').forEach(function (el) {
-      var i = +el.getAttribute("data-ghost-slot").split(":")[1];
-      el.style.cssText += ";" + GHOST[(i - a + 3) % 3];
-    });
     $all('[data-pick^="' + t + ':"]').forEach(function (b) {
       b.classList.toggle("sel", +b.getAttribute("data-pick").split(":")[1] === a);
     });
@@ -39,10 +41,60 @@
     if (n) n.textContent = D[t].names[a];
     if (g) g.textContent = D[t].tags[a];
   }
+  function applyThemeFan(t, scrollRow) {
+    var a = v[t];
+    $all('[data-ghost-slot^="' + t + ':"]').forEach(function (el) {
+      var i = +el.getAttribute("data-ghost-slot").split(":")[1];
+      if (MOBILE.matches) {
+        el.style.opacity = ""; el.style.transform = ""; el.style.zIndex = "";  // let the row stylesheet win
+        if (scrollRow && i === a) {
+          var row = el.parentNode;                                             // centre the picked card; never
+          setTimeout(function () {                                             // scrollIntoView — it drags the PAGE too.
+            /* deferred past the style writes above: a reflow mid-smooth-scroll lets the mandatory snap
+               cancel the animation and yank the row back. setTimeout, NOT requestAnimationFrame — rAF
+               never fires while a page is occluded (backgrounded tab), and then the scroll never runs */
+            row.scrollTo({ left: el.offsetLeft - (row.clientWidth - el.offsetWidth) / 2, behavior: rm ? "auto" : "smooth" });
+          }, 0);
+        }
+      } else {
+        el.style.cssText += ";" + GHOST[(i - a + 3) % 3];
+      }
+    });
+    fanLabels(t);
+  }
   $all("[data-pick]").forEach(function (b) {
     var parts = b.getAttribute("data-pick").split(":");
-    var go = function () { auto[parts[0]] = false; if (v[parts[0]] !== +parts[1]) { v[parts[0]] = +parts[1]; applyThemeFan(parts[0]); } };
+    var go = function (e) {
+      if (MOBILE.matches && e.type !== "click") return;                        // hover/focus picks are a desktop idea
+      auto[parts[0]] = false;
+      if (v[parts[0]] !== +parts[1]) { v[parts[0]] = +parts[1]; applyThemeFan(parts[0], true); }
+    };
     b.addEventListener("click", go); b.addEventListener("mouseenter", go); b.addEventListener("focus", go);
+  });
+  /* row mode: a swipe IS the variant picker — whichever card settles nearest centre drives the labels.
+     scrollend (fires once the snap settles) where the engine has it, debounced scroll everywhere else. */
+  $all(".ghosts").forEach(function (row) {
+    var first = row.querySelector("[data-ghost-slot]"); if (!first) return;
+    var t = first.getAttribute("data-ghost-slot").split(":")[0], timer = 0;
+    var sync = function () {
+      if (!MOBILE.matches) return;
+      var mid = row.scrollLeft + row.clientWidth / 2, best = 0, bd = 1e9;
+      $all('[data-ghost-slot^="' + t + ':"]').forEach(function (el) {
+        var d = Math.abs(el.offsetLeft + el.offsetWidth / 2 - mid);
+        if (d < bd) { bd = d; best = +el.getAttribute("data-ghost-slot").split(":")[1]; }
+      });
+      auto[t] = false;
+      if (v[t] !== best) { v[t] = best; fanLabels(t); }                        // labels only — no scrollTo, no loop
+    };
+    if ("onscrollend" in row) row.addEventListener("scrollend", sync);
+    row.addEventListener("scroll", function () {
+      if (!MOBILE.matches) return;
+      clearTimeout(timer); timer = setTimeout(sync, 140);
+    }, { passive: true });
+  });
+  /* crossing the breakpoint re-applies every fan, so desktop inline styles never haunt the row (or vice versa) */
+  if (MOBILE.addEventListener) MOBILE.addEventListener("change", function () {
+    for (var t in v) applyThemeFan(t, false);
   });
 
   /* ---- hero coverflow ---- */
@@ -75,7 +127,8 @@
   if (!rm) setInterval(function () {
     if (document.hidden) return;
     ticks++;
-    for (var t in auto) if (auto[t]) { v[t] = (v[t] + 1) % 3; applyThemeFan(t); }
+    /* fans auto-advance on desktop only — auto-scrolling a row someone's thumb might be on is hostile */
+    if (!MOBILE.matches) for (var t in auto) if (auto[t]) { v[t] = (v[t] + 1) % 3; applyThemeFan(t); }
     h = (h + 1) % HERO_N; applyHero();
     if (ticks % 2 === 0) { w = (w + 1) % 4; applyWidget(); }
   }, CYCLE_SECONDS * 1000);

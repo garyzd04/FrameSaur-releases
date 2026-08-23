@@ -90,7 +90,10 @@ h1,h2{margin:0;font-family:'Bricolage Grotesque',sans-serif;font-weight:700;lett
 .float-sub{color:#B9C9B4;font-weight:700;font-size:15.5px;text-shadow:0 1px 8px rgba(0,0,0,.5)}
 
 /* ---------- 07 yours ---------- */
-.yours{min-height:88vh;display:grid;align-items:center;padding:80px 0;overflow:hidden}
+/* minmax(0,1fr), not the default auto track: the marquee inside is width:max-content, and a grid auto
+   track grows to a child's intrinsic max-content — the whole section stretched to ~2760px and the heading
+   was clipped at the viewport edge. A definite track keeps .marquee-mask's width:100% meaning "one screen". */
+.yours{min-height:88vh;display:grid;grid-template-columns:minmax(0,1fr);align-items:center;padding:80px 0;overflow:hidden}
 .yours-in{display:flex;flex-direction:column;gap:52px}
 .yours-head{display:flex;flex-direction:column;gap:16px;text-align:center;padding:0 6vw}
 .yours-head h2{line-height:1.04;font-size:clamp(40px,6vw,92px);text-wrap:balance}

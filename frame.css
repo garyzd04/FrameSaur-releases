@@ -201,6 +201,7 @@ button,input,select{font-family:inherit;color:inherit}button{cursor:pointer;back
 .frame[data-layout="square"] .dino-peek{top:-14px;left:auto;right:4%;margin-left:0;width:72px} /* label row sits on the art top in square — keep the peek small and past the text */
 .blink{transform-origin:center 39px}
 .paw-trail{bottom:12px;left:14px;width:64px;opacity:.32;z-index:0}
+.frame[data-layout="square"] .paw-trail{opacity:.16} /* square puts the times row over the paws — keep the numbers readable */
 .paw-trail svg{display:block;width:100%}
 /* Cat Nap. Ears go top-RIGHT, not top-left: they need z-index 2 to sit on the card's top edge, and the
    "NOW PURRING" label is left-aligned in that same row, so anchoring left would bury it. Tail and yarn stay
@@ -443,9 +444,14 @@ button,input,select{font-family:inherit;color:inherit}button{cursor:pointer;back
    and would miss these — which is harmless here because every --r-* is 0 during export, so they are all
    identity. Same reason `filter` is allowed here but not in motion.
 
-   --rx-op0 / --rx-f0 carry the element's ORIGINAL opacity and filter, captured before the effect is
-   attached: `opacity` and `filter` are absolute properties, so writing them bare would erase .leaf-corner's
-   opacity:.3 or .stkr's drop-shadow. */
+   --rx-op0 / --rx-f0 / --rx-sh0 carry the element's ORIGINAL opacity, filter and box-shadow, captured
+   before the effect is attached: these are absolute properties, so writing them bare would erase
+   .leaf-corner's opacity:.3, .stkr's drop-shadow or .planet's ambient glow.
+
+   EVERY effect's rest pose (--r-v:0) must equal the element's base style — the same contract the motion
+   presets carry. An effect that "rests" anywhere else changes how the theme LOOKS the moment audio is
+   merely enabled, and un-syncs exports from the pixel-gate baselines (twinkle once rested at .55×base:
+   nine specs drifted and the hunt ran through five wrong theories before landing here). */
 [data-rx]{ --r-v: 0 }
 [data-rx="pulse"]   { scale: calc(1 + var(--r-v,0) * .18) }
 [data-rx="bounce"]  { translate: 0 calc(var(--r-v,0) * -9px) }
@@ -454,12 +460,16 @@ button,input,select{font-family:inherit;color:inherit}button{cursor:pointer;back
    "unsupported color function" — which kills the whole export, not just the shadow. rgb() with a var for the
    channels and a calc() alpha serialises to plain rgba(), which its 2021 parser reads fine, and lands at
    rgba(...,0) at rest so there is no shadow to paint on a transparent box. --rx-glow-rgb is set per element
-   from the theme accent in rxAttach. */
-[data-rx="glow"]    { box-shadow: 0 0 calc(var(--r-v,0) * 20px) rgb(var(--rx-glow-rgb, 255 255 255) / calc(var(--r-v,0) * .6)) }
+   from the theme accent in rxAttach. The first layer is the element's OWN captured shadow (--rx-sh0):
+   box-shadow is absolute, so without it the glow effect ERASED .planet's 34px ambient glow whenever it was
+   attached — the falls-back zero-size transparent layer keeps the declaration valid for shadowless hosts. */
+[data-rx="glow"]    { box-shadow: var(--rx-sh0, 0 0 0 rgba(0,0,0,0)), 0 0 calc(var(--r-v,0) * 20px) rgb(var(--rx-glow-rgb, 255 255 255) / calc(var(--r-v,0) * .6)) }
 [data-rx="brighten"]{ filter: var(--rx-f0,) brightness(calc(1 + var(--r-v,0) * .45)) }
 [data-rx="hue"]     { filter: var(--rx-f0,) hue-rotate(calc(var(--r-v,0) * 45deg)) }
 [data-rx="opacity"] { opacity: calc(var(--rx-op0,1) * (1 - var(--r-v,0) * .55)) }
-[data-rx="twinkle"] { opacity: calc(var(--rx-op0,1) * (.55 + var(--r-v,0) * .45)) }
+/* twinkle DIPS from base rather than sitting dim and flashing up: most twinkle hosts (the y2k bubbles)
+   have base opacity 1, so "up" has no headroom anyway, and resting below base broke the rest==base rule. */
+[data-rx="twinkle"] { opacity: calc(var(--rx-op0,1) * (1 - var(--r-v,0) * .45)) }
 
 /* ================= MOTION REGISTRY =================
    Presets are DATA in js/motion-presets.js; js/motion.js writes --m-kf/--m-dur/--m-ease/--m-amt/--m-delay
