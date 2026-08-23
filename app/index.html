@@ -1094,6 +1094,28 @@ body .mini-btn.primary{background:var(--leaf);border-color:var(--leaf);color:var
 body .mini-btn.primary:hover{background:var(--leaf-hover,var(--leaf-dark))}
 .cm-empty{grid-column:1/-1;text-align:center;color:var(--ink-soft);font-size:13px;padding:26px 0}
 .cm-foot{margin-top:12px;padding-top:10px;border-top:1px solid var(--line)}
+/* publisher status chips — a pending theme in "mine" must not look identical to a live one */
+.cm-status{font-style:normal;font-size:10px;font-weight:900;letter-spacing:.04em;text-transform:uppercase;border-radius:999px;padding:2px 7px}
+.cm-status.s-pending{background:rgba(255,193,77,.18);color:#B37E1E;border:1px solid rgba(255,193,77,.5)}
+.cm-status.s-approved{background:var(--leaf-tint);color:var(--leaf-dark,var(--leaf));border:1px solid var(--leaf)}
+.cm-status.s-rejected{background:rgba(228,68,46,.14);color:#C24532;border:1px solid rgba(228,68,46,.45)}
+/* moderation queue (visible to moderators only — supabase/migrations/0006) */
+.cm-card.cm-pending{border-style:dashed}
+.cm-reports{grid-column:1/-1;border:1.5px solid var(--line);border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:6px;font-size:12px}
+.cm-rep{display:flex;align-items:center;gap:8px}
+.cm-rep span{flex:1;color:var(--ink-soft)}
+/* community stickers (packs tab) */
+.cm-stk-title{font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-soft)}
+#cmStkNet{margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
+#cmStkNet[hidden]{display:none}
+.cm-stk-img{display:grid;place-items:center;background:var(--panel-2);border-radius:10px;padding:10px}
+.cm-stk-img img{width:64px;height:64px;object-fit:contain;image-rendering:auto}
+.cm-stk-pick{border:1.5px dashed var(--line);border-radius:12px;padding:10px;margin-bottom:10px}
+.cm-stk-pick[hidden]{display:none}
+.cm-stk-tray{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.cm-stk-tray button{width:52px;height:52px;border:1.5px solid var(--line);border-radius:10px;background:var(--panel);cursor:pointer;padding:5px}
+.cm-stk-tray button:hover{border-color:var(--leaf)}
+.cm-stk-tray img{width:100%;height:100%;object-fit:contain}
 
 .tb-tabs{display:flex;gap:4px;background:var(--panel-2);border:1px solid var(--line);border-radius:11px;padding:4px;margin-bottom:10px}
 .tb-tabs button{flex:1;padding:7px 4px;border-radius:8px;font-weight:800;font-size:12px;color:var(--ink-soft)}
@@ -2026,9 +2048,10 @@ body[data-studio="blackcat"] .home[data-deco="on"] .hm::after{
       <button class="mini-btn primary" id="cmPreviewKeep">Install this</button>
     </div>
     <div class="cm-grid" id="cmGrid"></div>
+    <div id="cmStkNet" hidden></div>
     <div class="cm-net" id="cmNet" hidden></div>
     <div class="cm-foot">
-      <span class="hint">Curated themes ship with FrameSaur and install straight to your own themes — nothing leaves this PC.</span>
+      <span class="hint">Curated themes ship with FrameSaur; installing anything keeps it local. Publishing sends only the theme you choose — never your Spotify login or listening data.</span>
     </div>
   </div>
 </div>
@@ -2207,7 +2230,7 @@ body[data-studio="blackcat"] .home[data-deco="on"] .hm::after{
   </div>
 </div>
 
-<div class="toast" id="toast"></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 <script>
 /* framesaur · js/data.js — Built-in themes, demo tracks, covers, accent presets
    Classic script (shared global scope): load order in framesaur.html matters. See CLAUDE.md. */
@@ -4817,6 +4840,25 @@ function stkMotionWrite(){
 }
 $("sel-anim").addEventListener("change",stkMotionWrite);
 $("rng-stkr-speed").addEventListener("input",stkMotionWrite);
+
+/* Focus FOLLOWS dialogs, not just trapped by them: opening moves focus onto the dialog's first control
+   (screen readers announce it via the role="dialog" name), closing hands focus back to wherever it came
+   from. One observer covers every .modal, including the JS-built shortcuts sheet. */
+let MODAL_RETURN = null;
+new MutationObserver(muts => {
+  for (const mu of muts){
+    const el = mu.target;
+    if (!(el.classList && el.classList.contains("modal"))) continue;
+    if (!el.hidden){
+      if (!MODAL_RETURN) MODAL_RETURN = document.activeElement;
+      const f = el.querySelector("button,select,input,textarea");
+      if (f) f.focus();
+    } else if (MODAL_RETURN){
+      try{ MODAL_RETURN.focus() }catch(e){}
+      MODAL_RETURN = null;
+    }
+  }
+}).observe(document.body, {subtree: true, attributes: true, attributeFilter: ["hidden"]});
 
 /* Focus trap: while a dialog is open, Tab cycles inside it instead of escaping into the page behind.
    Delegated so every .modal (incl. the JS-built shortcuts sheet) gets it for free. */
@@ -7458,6 +7500,7 @@ function cmRender(){
   const tags = $("cmTags");
   tags.innerHTML = '<button class="' + (CM_TAG ? "" : "on") + '" data-tag="">All</button>'
     + cmAllTags().map(t => '<button class="' + (CM_TAG === t ? "on" : "") + '" data-tag="' + esc(t) + '">' + esc(t) + '</button>').join("");
+  if (typeof cmStkSync === "function") cmStkSync();   // Phase B: community stickers ride the packs tab
 }
 
 /* ---------- panel ---------- */
@@ -7519,6 +7562,7 @@ let SB_LOADING = null;         // in-flight loader promise (cleared from .then, 
 let CM_FEED = "new";           // new | top | trending | mine | saved
 let CM_SESSION = null;
 
+
 function cmNetConfigured(){
   return typeof COMMUNITY_CONFIG !== "undefined" && !!(COMMUNITY_CONFIG.url && COMMUNITY_CONFIG.anonKey);
 }
@@ -7559,6 +7603,7 @@ async function cmNetOpen(){
       });
       const {data} = await SB.auth.getSession();
       CM_SESSION = data && data.session;
+      await cmCheckMod();
     }
     cmNetRenderBar();
     await cmNetLoad();
@@ -7584,6 +7629,7 @@ async function cmSignIn(){
       const ex = await SB.auth.exchangeCodeForSession(res.code);
       if (ex.error) throw ex.error;
       CM_SESSION = ex.data.session;
+      await cmCheckMod();
     } else {
       await SB.auth.signInWithOAuth({provider: "discord", options: {redirectTo: location.href}});
       return;                                   // browser mode navigates away and comes back
@@ -7594,9 +7640,12 @@ async function cmSignIn(){
 }
 async function cmSignOut(){
   if (!SB) return;
-  await SB.auth.signOut(); CM_SESSION = null;
+  await SB.auth.signOut(); CM_SESSION = null; CM_MOD = false;
+  if (CM_FEED === "queue") CM_FEED = "new";
   cmNetRenderBar(); await cmNetLoad();
 }
+
+
 
 /* ---------- feeds ---------- */
 async function cmNetLoad(){
@@ -7616,9 +7665,14 @@ async function cmNetLoad(){
     } else if (CM_FEED === "mine"){
       if (!CM_SESSION){ body.innerHTML = '<p class="cm-empty">Sign in to see what you published.</p>'; return }
       rows = (await SB.from("themes").select("*").eq("owner", CM_SESSION.user.id).order("created_at", {ascending: false})).data || [];
+    } else if (CM_FEED === "queue"){
+      await cmQueueLoad(body);               // js/community-mod.js — loads after this file, resolved at fire time
+      return;
     } else {
       let sel = SB.from("themes").select("*").eq("status", "approved");
-      if (q) sel = sel.ilike("name", "%" + q + "%");
+      /* name OR exact tag — sanitised, since the term is spliced into a PostgREST filter expression */
+      const safe = q.replace(/[^a-zA-Z0-9 -]/g, "").trim().toLowerCase();
+      if (safe) sel = sel.or("name.ilike.%" + safe + "%,tags.cs.{" + safe + "}");
       sel = CM_FEED === "top" ? sel.order("likes_count", {ascending: false}) : sel.order("created_at", {ascending: false});
       rows = (await sel.limit(40)).data || [];
     }
@@ -7639,22 +7693,44 @@ function cmNetCached(){
   try{ const c = JSON.parse(safeStore.get("fs_cm_cache") || "null"); return (c && Array.isArray(c.rows)) ? c.rows : [] }catch(e){ return [] }
 }
 
+/* A theme gallery you browse with your eyes: published rows carry their vars in data.v, which is exactly
+   what the curated tiles render minis from. Same pipeline, same look. */
+function cmRowThumb(r){
+  try{
+    const p = r.data || {};
+    const vars = {}; TB_COLORS.forEach(([k]) => { vars[k] = hex6((p.v && p.v[k]) || tbDefaultsFor(k)) });
+    return '<div class="cm-thumb">' + themeThumbHTML(deriveVars(vars, p.b || r.base), p.b || r.base, null) + '</div>';
+  }catch(e){ return "" }
+}
 function cmNetTile(r){
+  const mine = CM_FEED === "mine";
+  /* publishers must SEE their status — a pending theme in "mine" looks identical to a live one otherwise */
+  const chip = (r.status && (mine || r.status !== "approved"))
+    ? '<i class="cm-status s-' + esc(r.status) + '">' + esc(r.status) + '</i>' : "";
+  const acts = mine
+    ? '<button class="mini-btn primary" data-net-act="use">Use</button>'
+      + '<button class="mini-btn warn" data-net-act="remove">Remove</button>'
+    : '<button class="mini-btn" data-net-act="like">♥</button>'
+      + '<button class="mini-btn" data-net-act="save">Save</button>'
+      + '<button class="mini-btn primary" data-net-act="use">Use</button>'
+      + '<button class="mini-btn" data-net-act="report" title="Report this">⚑</button>';
   return '<article class="cm-card" data-net="' + esc(r.id) + '">'
+    + cmRowThumb(r)
     + '<div class="cm-meta"><b>' + esc(r.name) + '</b><span>♥ ' + (r.likes_count | 0) + ' · used ' + (r.uses_count | 0) + '</span></div>'
-    + '<div class="cm-chips">' + (r.tags || []).map(t => '<i>' + esc(t) + '</i>').join("") + '</div>'
-    + '<div class="cm-act">'
-    + '<button class="mini-btn" data-net-act="like">♥</button>'
-    + '<button class="mini-btn" data-net-act="save">Save</button>'
-    + '<button class="mini-btn primary" data-net-act="use">Use</button>'
-    + '<button class="mini-btn" data-net-act="report" title="Report this">⚑</button>'
-    + '</div></article>';
+    + '<div class="cm-chips">' + chip + (r.tags || []).map(t => '<i>' + esc(t) + '</i>').join("") + '</div>'
+    + '<div class="cm-act">' + acts + '</div></article>';
+}
+async function cmNetRemove(row){
+  if (!confirm("Remove “" + row.name + "” from the community?\n\nPeople who already installed it keep their local copy.")) return;
+  const {error} = await SB.from("themes").delete().eq("id", row.id);
+  toast(error ? ("Couldn't remove: " + error.message) : "“" + row.name + "” removed");
+  await cmNetLoad();
 }
 
 /* ---------- actions ---------- */
 async function cmNetUse(row){
   await cmInstallTheme({id: row.id, name: row.name, payload: row.data});  // same validated importer
-  try{ await SB.rpc("bump_uses", {p_theme: row.id}) }catch(e){}           // security-definer RPC; RLS forbids a direct UPDATE
+  if (CM_SESSION) try{ await SB.rpc("bump_uses", {p_theme: row.id}) }catch(e){}  // signed-in installs only (0007) — a count you can curl-inflate is worth nothing
 }
 async function cmNetLike(row){
   if (!CM_SESSION){ toast("Sign in with Discord to like themes"); return }
@@ -7682,12 +7758,133 @@ async function cmNetPublish(){
   if (!SB || !CM_SESSION){ toast("Sign in with Discord to publish"); return }
   const d = (typeof activeCustom === "function" && activeCustom()) || null;
   if (!d){ toast("Select one of your own custom themes first"); return }
+  const name = String(d.name).slice(0, 40);
+  /* republishing the same name would just stack duplicates in the moderation queue */
+  const dup = await SB.from("themes").select("id,status").eq("owner", CM_SESSION.user.id).eq("name", name).neq("status", "rejected").limit(1);
+  if (dup.data && dup.data.length){
+    toast("You already published “" + name + "” (" + dup.data[0].status + ") — remove it under *mine* first, or rename the theme.", 5000);
+    return;
+  }
+  const t = prompt("Tags? Comma-separated, up to 6 — they help people find it (optional)", "");
+  if (t === null){ toast("Publish cancelled."); return }
+  const tags = [...new Set(t.split(",").map(x => x.trim().toLowerCase().replace(/[^a-z0-9-]/g, "").slice(0, 12)).filter(Boolean))].slice(0, 6);
   const payload = {n: d.name, b: d.base, p: d.np, s: d.stickers || [], v: d.vars};
   const {error} = await SB.from("themes").insert({
-    owner: CM_SESSION.user.id, name: String(d.name).slice(0, 40), data: payload,
-    base: d.base || "none", tags: [], status: "pending",
+    owner: CM_SESSION.user.id, name, data: payload,
+    base: d.base || "none", tags, status: "pending",
   });
   toast(error ? ("Couldn't publish: " + error.message) : "Sent for review — it appears once approved ✦", 5000);
+}
+
+/* ---------- community stickers (rides the curated "Sticker packs" tab) ----------
+   v1 is stills only: an animated sticker is a PAIR (original bytes + first-frame still) and publishing
+   both halves properly deserves its own pass. Likes/saves for stickers are schema-ready but UI-later. */
+let CM_STK = [];               // last sticker rows rendered (dispatch reads from here)
+let CM_STK_LOADED = false;
+
+function cmStkSync(){
+  const box = $("cmStkNet"); if (!box) return;
+  const show = (typeof CM_TAB !== "undefined" && CM_TAB === "packs") && cmNetConfigured();
+  box.hidden = !show;
+  if (show && !CM_STK_LOADED) cmStkLoad();
+}
+
+async function cmStkLoad(){
+  const box = $("cmStkNet"); if (!box || !SB) return;
+  CM_STK_LOADED = true;
+  const uid = CM_SESSION ? CM_SESSION.user.id : null;
+  let sel = SB.from("stickers").select("*, profiles!owner(handle)").order("created_at", {ascending: false}).limit(40);
+  /* signed in you also see your OWN pending/rejected rows (with a status chip); signed out, approved only */
+  sel = uid ? sel.or("status.eq.approved,owner.eq." + uid) : sel.eq("status", "approved");
+  const r = await sel;
+  CM_STK = r.data || [];
+  box.innerHTML =
+    '<div class="cm-bar"><b class="cm-stk-title">From the community</b><span class="spacer"></span>'
+    + (CM_SESSION ? '<button class="mini-btn" id="cmStkPub">Publish a sticker</button>'
+                  : '<span class="cm-count">Sign in (Themes tab) to publish yours</span>')
+    + '</div>'
+    + '<div class="cm-stk-pick" id="cmStkPick" hidden></div>'
+    + '<div class="cm-grid">'
+    + (CM_STK.length ? CM_STK.map(cmStkTile).join("") : '<p class="cm-empty">No community stickers yet — publish the first one.</p>')
+    + '</div>';
+  const pb = $("cmStkPub"); if (pb) pb.onclick = cmStkPickToggle;
+  box.onclick = cmStkDispatch;
+}
+
+function cmStkTile(r){
+  const by = (r.profiles && r.profiles.handle) || "?";
+  const chip = r.status !== "approved" ? '<i class="cm-status s-' + esc(r.status) + '">' + esc(r.status) + '</i>' : "";
+  return '<article class="cm-card cm-stk" data-stk="' + esc(r.id) + '">'
+    + '<div class="cm-stk-img"><img src="' + esc(r.image_url) + '" alt="" loading="lazy"></div>'
+    + '<div class="cm-meta"><b>' + esc(r.name) + '</b><span>by ' + esc(by) + '</span></div>'
+    + '<div class="cm-chips">' + chip + '</div>'
+    + '<div class="cm-act"><button class="mini-btn primary" data-stk-act="install">Add to tray</button>'
+    + (CM_SESSION && r.owner === CM_SESSION.user.id ? '<button class="mini-btn warn" data-stk-act="remove">Remove</button>' : "")
+    + '</div></article>';
+}
+
+function cmStkPickToggle(){
+  const pick = $("cmStkPick"); if (!pick) return;
+  if (!pick.hidden){ pick.hidden = true; return }
+  const stills = (typeof CUSTOM_STICKERS !== "undefined" ? CUSTOM_STICKERS : []).filter(cs => !cs.anim);
+  pick.innerHTML = stills.length
+    ? '<span class="hint" style="margin:0">Pick one of your tray stickers to publish (stills only for now):</span>'
+      + '<div class="cm-stk-tray">' + stills.map(cs =>
+          '<button data-stk-pub="' + esc(cs.id) + '" title="Publish this one"><img src="' + cs.src + '" alt=""></button>').join("") + '</div>'
+    : '<span class="hint" style="margin:0">Your tray is empty — make a sticker first (Stickers → ＋ make).</span>';
+  pick.hidden = false;
+}
+
+async function cmStkPublishSrc(src, name){
+  /* the tray already re-encoded this through a canvas at import time — that is the sanitiser */
+  const blob = await (await fetch(src)).blob();
+  if (blob.size > 204800){ toast("That sticker is over the 200KB cap"); return false }
+  const mime = blob.type === "image/webp" ? "image/webp" : "image/png";
+  const path = CM_SESSION.user.id + "/" + crypto.randomUUID() + (mime === "image/webp" ? ".webp" : ".png");
+  const up = await SB.storage.from("stickers").upload(path, blob, {contentType: mime});
+  if (up.error){ toast("Upload failed: " + up.error.message, 5000); return false }
+  const url = SB.storage.from("stickers").getPublicUrl(path).data.publicUrl;
+  const ins = await SB.from("stickers").insert({
+    owner: CM_SESSION.user.id, name: String(name).slice(0, 40), image_url: url, mime, bytes: blob.size, tags: [], status: "pending",
+  });
+  if (ins.error){ toast("Couldn't publish: " + ins.error.message, 5000); return false }
+  toast("Sent for review — it appears once approved ✦", 5000);
+  return true;
+}
+
+async function cmStkInstall(row){
+  let durl = null;
+  try{
+    if (EL && EL.fetchDataURL) durl = await EL.fetchDataURL(row.image_url);          // main-process fetch, allowlisted
+    else { const b = await (await fetch(row.image_url)).blob();                       // browser: CORS-read from storage
+      durl = await new Promise(res => { const rd = new FileReader(); rd.onload = () => res(rd.result); rd.readAsDataURL(b) }); }
+  }catch(e){}
+  if (!durl || String(durl).indexOf("data:image/") !== 0){ toast("Couldn't fetch that sticker right now", 4500); return }
+  addCustomSticker(durl, false);   // tray cap + duplicate guard + toast live there
+}
+
+async function cmStkDispatch(e){
+  const pub = e.target.closest("button[data-stk-pub]");
+  if (pub){
+    const cs = CUSTOM_STICKERS.find(x => x.id === pub.dataset.stkPub); if (!cs) return;
+    const name = prompt("Name this sticker", "My sticker"); if (name === null) return;
+    $("cmStkPick").hidden = true;
+    if (await cmStkPublishSrc(cs.src, name || "My sticker")){ CM_STK_LOADED = false; cmStkSync() }
+    return;
+  }
+  const btn = e.target.closest("button[data-stk-act]"); if (!btn) return;
+  const row = CM_STK.find(r => r.id === btn.closest("[data-stk]").dataset.stk); if (!row) return;
+  if (btn.dataset.stkAct === "install") await cmStkInstall(row);
+  else if (btn.dataset.stkAct === "remove"){
+    if (!confirm("Remove “" + row.name + "” from the community?")) return;
+    const path = row.image_url.split("/object/public/stickers/")[1];
+    await SB.from("stickers").delete().eq("id", row.id);
+    if (path) await SB.storage.from("stickers").remove([decodeURIComponent(path)]).catch(() => {});
+    /* the public URL may keep serving from the CDN edge for a while after removal — the row is gone
+       from every feed immediately, which is what matters; do not "verify" deletion by fetching the URL */
+    toast("“" + row.name + "” removed");
+    CM_STK_LOADED = false; cmStkSync();
+  }
 }
 
 function cmNetRenderBar(){
@@ -7696,7 +7893,7 @@ function cmNetRenderBar(){
   net.innerHTML =
     '<div class="cm-bar">'
     + '<div class="seg" id="cmFeeds">'
-    + ["new", "top", "trending", "mine", "saved"].map(f =>
+    + ["new", "top", "trending", "mine", "saved"].concat(CM_MOD ? ["queue"] : []).map(f =>
         '<button data-feed="' + f + '"' + (CM_FEED === f ? ' class="on"' : "") + '>' + f + "</button>").join("")
     + '</div><span class="spacer"></span>'
     + (who ? '<span class="cm-count">' + who + '</span><button class="mini-btn" id="cmPublish">Publish current</button>'
@@ -7709,16 +7906,121 @@ function cmNetRenderBar(){
   net.querySelectorAll("#cmFeeds button").forEach(b => b.onclick = () => { CM_FEED = b.dataset.feed; cmNetRenderBar(); cmNetLoad() });
   const body = $("cmNetBody");
   if (body) body.onclick = async e => {
+    if (typeof cmModDispatch === "function" && await cmModDispatch(e)) return;   // moderation buttons (community-mod.js)
     const btn = e.target.closest("button[data-net-act]"); if (!btn) return;
     const card = btn.closest("[data-net]"); if (!card) return;
     const row = (cmNetCached().find(r => r.id === card.dataset.net));
     if (!row) return;
     const act = btn.dataset.netAct;
+    if (act === "remove"){ await cmNetRemove(row); return }
     if (act === "use") await cmNetUse(row);
     else if (act === "like") await cmNetLike(row);
     else if (act === "save") await cmNetSave(row);
     else if (act === "report") await cmNetReport(row);
   };
+}
+
+</script>
+<script>
+/* framesaur · js/community-mod.js — the moderation queue (moderator accounts only; supabase/migrations/0006)
+   Classic script (shared global scope): loads AFTER community-net.js, which calls into here at fire time.
+   Moderation is an RLS grant on a normal Discord sign-in — no service keys, no tokens, anywhere. */
+
+let CM_QUEUE_STK = [];         // pending stickers (moderator view)
+let CM_MOD = false;            // is_moderator() for this session — decides whether the queue tab exists
+let CM_QUEUE = [];             // current queue rows; deliberately NOT cmNetCache'd (that cache feeds offline browse)
+
+/* One RPC per session decides whether the queue tab renders at all. */
+async function cmCheckMod(){
+  CM_MOD = false;
+  if (!SB || !CM_SESSION) return;
+  try{ const r = await SB.rpc("is_moderator"); CM_MOD = !!r.data }catch(e){}
+}
+
+async function cmQueueLoad(body){
+  if (!CM_MOD){ body.innerHTML = '<p class="cm-empty">Only moderators can see the queue.</p>'; return }
+  /* the embed MUST name the FK: theme_likes makes themes↔profiles ambiguous and PostgREST refuses */
+  const pending = await SB.from("themes").select("*, profiles!owner(handle,discord_id)").eq("status", "pending").order("created_at");
+  CM_QUEUE = pending.data || [];
+  const reps = await SB.from("reports").select("*").eq("handled", false).order("created_at");
+  const repRows = reps.data || [];
+  /* a report without the item's NAME is unactionable — resolve them (moderator read sees every status) */
+  const ids = [...new Set(repRows.filter(r => r.item_kind === "theme").map(r => r.item_id))];
+  const named = ids.length ? await SB.from("themes").select("id,name").in("id", ids) : {data: []};
+  const nameOf = {}; (named.data || []).forEach(t => nameOf[t.id] = t.name);
+  const pStk = await SB.from("stickers").select("*, profiles!owner(handle,discord_id)").eq("status", "pending").order("created_at");
+  CM_QUEUE_STK = pStk.data || [];
+  body.innerHTML =
+    ((CM_QUEUE.length || CM_QUEUE_STK.length)
+      ? CM_QUEUE.map(cmModTile).join("") + CM_QUEUE_STK.map(cmModStkTile).join("")
+      : '<p class="cm-empty">Queue is empty — nothing waiting on you.</p>')
+    + (repRows.length ? '<div class="cm-reports"><b>⚑ Open reports</b>' + repRows.map(r => cmRepRow(r, nameOf)).join("") + '</div>' : "");
+}
+
+function cmModStkTile(r){
+  const by = (r.profiles && r.profiles.handle) || "?";
+  const did = (r.profiles && r.profiles.discord_id) || "unknown";
+  return '<article class="cm-card cm-pending cm-stk" data-mod-stk="' + esc(r.id) + '" title="Discord ID: ' + esc(did) + '">'
+    + '<div class="cm-stk-img"><img src="' + esc(r.image_url) + '" alt=""></div>'
+    + '<div class="cm-meta"><b>' + esc(r.name) + '</b><span>sticker · by ' + esc(by) + ' · ' + Math.round((r.bytes || 0) / 1024) + 'KB</span></div>'
+    + '<div class="cm-act">'
+    + '<button class="mini-btn primary" data-mod-stk-act="approve">Approve</button>'
+    + '<button class="mini-btn warn" data-mod-stk-act="reject">Reject</button>'
+    + '</div></article>';
+}
+
+function cmModTile(r){
+  const by = (r.profiles && r.profiles.handle) || "?";
+  const age = (d => d < 1 ? "today" : Math.round(d) + "d ago")((Date.now() - new Date(r.created_at)) / 864e5);
+  const did = (r.profiles && r.profiles.discord_id) || "unknown";
+  return '<article class="cm-card cm-pending" data-mod="' + esc(r.id) + '" title="Discord ID: ' + esc(did) + '">'
+    + (typeof cmRowThumb === "function" ? cmRowThumb(r) : "")
+    + '<div class="cm-meta"><b>' + esc(r.name) + '</b><span>by ' + esc(by) + ' · ' + esc(r.base) + ' · ' + age + '</span></div>'
+    + '<div class="cm-act">'
+    + '<button class="mini-btn" data-mod-act="preview">Preview</button>'
+    + '<button class="mini-btn primary" data-mod-act="approve">Approve</button>'
+    + '<button class="mini-btn warn" data-mod-act="reject">Reject</button>'
+    + '</div></article>';
+}
+function cmRepRow(r, nameOf){
+  const what = r.item_kind === "theme" ? "theme “" + ((nameOf || {})[r.item_id] || "deleted") + "”" : r.item_kind;
+  return '<div class="cm-rep" data-rep="' + esc(r.id) + '"><span>' + esc(what) + ' · ' + esc(String(r.reason).slice(0, 120)) + '</span>'
+    + '<button class="mini-btn" data-rep-act="handled">Handled</button></div>';
+}
+async function cmModerate(row, status, table){
+  const {error} = await SB.from(table || "themes").update({status}).eq("id", row.id);
+  toast(error ? ("Couldn't update: " + error.message)
+              : (status === "approved" ? "“" + row.name + "” is live for everyone ✦" : "“" + row.name + "” rejected"));
+  await cmNetLoad();
+}
+
+/* Called first from the shared feed-body click handler; true = the click was a moderation button. */
+async function cmModDispatch(e){
+  const mbtn = e.target.closest("button[data-mod-act]");
+  if (mbtn){
+    const card = mbtn.closest("[data-mod]"); const row = CM_QUEUE.find(r => r.id === card.dataset.mod);
+    if (!row) return true;
+    const act = mbtn.dataset.modAct;
+    if (act === "preview") cmPreview({id: row.id, name: row.name, payload: row.data});
+    else if (act === "approve") await cmModerate(row, "approved");
+    else if (act === "reject") await cmModerate(row, "rejected");
+    return true;
+  }
+  const sbtn = e.target.closest("button[data-mod-stk-act]");
+  if (sbtn){
+    const row = CM_QUEUE_STK.find(r => r.id === sbtn.closest("[data-mod-stk]").dataset.modStk);
+    if (row) await cmModerate(row, sbtn.dataset.modStkAct === "approve" ? "approved" : "rejected", "stickers");
+    return true;
+  }
+  const rbtn = e.target.closest("button[data-rep-act]");
+  if (rbtn){
+    const rid = rbtn.closest("[data-rep]").dataset.rep;
+    const {error} = await SB.from("reports").update({handled: true}).eq("id", rid);
+    toast(error ? "Couldn't update the report" : "Report closed");
+    await cmNetLoad();
+    return true;
+  }
+  return false;
 }
 
 </script>
