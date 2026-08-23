@@ -1146,6 +1146,13 @@ body .mini-btn.primary:hover{background:var(--leaf-hover,var(--leaf-dark))}
 #communityModal .modal-card[data-profile-open] > :not(.cm-profile):not(.modal-head){display:none}
 .cm-by{background:none;border:0;padding:0;cursor:pointer;font:inherit;font-size:11px;font-weight:800;
   color:var(--leaf-dark,var(--leaf));letter-spacing:.01em;text-align:left;width:fit-content}
+/* the moderator's queue tab wears its workload */
+.cm-badge{font-style:normal;font-size:9px;font-weight:900;background:#E4442E;color:#fff;border-radius:999px;
+  padding:1px 5px;margin-left:5px;vertical-align:1px}
+.cm-badge[hidden]{display:none}
+/* the moderator's rejection reason, shown to the publisher under *mine* */
+.cm-why{font-size:11px;color:#C24532;font-style:italic;overflow-wrap:break-word}
+.cm-more{grid-column:1/-1;display:flex;justify-content:center;padding:6px 0 2px}
 .cm-by:hover{text-decoration:underline}
 .cm-me{display:inline-flex;align-items:center;gap:6px;background:none;border:0;padding:2px 4px;cursor:pointer;
   font:inherit;font-size:12px;font-weight:800;color:var(--ink);border-radius:999px}
@@ -7783,9 +7790,11 @@ function communityInit(){
 
 let SB = null;                 // the supabase-js client, created on first open
 let SB_LOADING = null;         // in-flight loader promise (cleared from .then, never a finally — see js/audio.js)
-let CM_FEED = "new";           // new | top | trending | mine | saved
+let CM_FEED = "new";           // new | top | trending | following | mine | saved (+ queue for moderators)
 let CM_SESSION = null;
 let CM_MYPROF = null;          // own profiles row (handle/avatar for the bar chip); refreshed on sign-in
+let CM_PAGE = 0;               // paging offset for the new/top feeds (Load more appends)
+let CM_ROWS = [];              // rows currently rendered in the feed body (paging appends here)
 
 
 function cmNetConfigured(){
@@ -7882,20 +7891,28 @@ async function cmMyProfLoad(){
 
 
 /* ---------- feeds ---------- */
-async function cmNetLoad(){
+const CM_PAGE_N = 40;          // page size; new/top get a Load more when a full page comes back
+async function cmNetLoad(append){
   const body = $("cmNetBody"); if (!body || !SB) return;
-  body.innerHTML = '<p class="cm-empty">Loading…</p>';
+  if (!append){ CM_PAGE = 0; CM_ROWS = []; body.innerHTML = '<p class="cm-empty">Loading…</p>' }
   try{
     let rows = [];
     const q = ($("cmSearch").value || "").trim();
     if (CM_FEED === "trending"){
-      const r = await SB.from("themes_trending").select("*").limit(40);
+      const r = await SB.from("themes_trending").select("*").limit(CM_PAGE_N);
       rows = r.data || [];
     } else if (CM_FEED === "saved"){
       if (!CM_SESSION){ body.innerHTML = '<p class="cm-empty">Sign in to see what you saved.</p>'; return }
       const f = await SB.from("favorites").select("item_id").eq("item_kind", "theme");
       const ids = (f.data || []).map(x => x.item_id);
       rows = ids.length ? (await SB.from("themes").select("*").in("id", ids)).data || [] : [];
+    } else if (CM_FEED === "following"){
+      if (!CM_SESSION){ body.innerHTML = '<p class="cm-empty">Sign in with Discord, then follow creators — their new themes land here.</p>'; return }
+      const f = await SB.from("follows").select("followee").eq("follower", CM_SESSION.user.id);
+      const who = (f.data || []).map(x => x.followee);
+      if (!who.length){ body.innerHTML = '<p class="cm-empty">You aren’t following anyone yet — tap a creator’s @name on any theme to see their page, and follow from there.</p>'; return }
+      rows = (await SB.from("themes").select("*").eq("status", "approved").in("owner", who)
+        .order("created_at", {ascending: false}).limit(CM_PAGE_N)).data || [];
     } else if (CM_FEED === "mine"){
       if (!CM_SESSION){ body.innerHTML = '<p class="cm-empty">Sign in to see what you published.</p>'; return }
       rows = (await SB.from("themes").select("*").eq("owner", CM_SESSION.user.id).order("created_at", {ascending: false})).data || [];
@@ -7908,19 +7925,42 @@ async function cmNetLoad(){
       const safe = q.replace(/[^a-zA-Z0-9 -]/g, "").trim().toLowerCase();
       if (safe) sel = sel.or("name.ilike.%" + safe + "%,tags.cs.{" + safe + "}");
       sel = CM_FEED === "top" ? sel.order("likes_count", {ascending: false}) : sel.order("created_at", {ascending: false});
-      rows = (await sel.limit(40)).data || [];
+      rows = (await sel.range(CM_PAGE * CM_PAGE_N, CM_PAGE * CM_PAGE_N + CM_PAGE_N - 1)).data || [];
     }
     if (CM_FEED !== "mine" && typeof cmDecorateBy === "function") await cmDecorateBy(rows);
-    cmNetCache(rows);
-    body.innerHTML = rows.length ? rows.map(r => cmNetTile(r)).join("")
-      : '<p class="cm-empty">Nothing here yet — be the first to publish one.</p>';
+    CM_ROWS = append ? CM_ROWS.concat(rows) : rows;
+    cmNetCache(CM_ROWS);
+    /* Load more only where paging is real: new/top over the base table. A full page back = maybe more. */
+    const more = (CM_FEED === "new" || CM_FEED === "top") && rows.length === CM_PAGE_N
+      ? '<div class="cm-more"><button class="mini-btn" id="cmMore">Load more</button></div>' : "";
+    body.innerHTML = (CM_ROWS.length ? CM_ROWS.map(r => cmNetTile(r)).join("")
+      : '<p class="cm-empty">Nothing here yet — be the first to publish one.</p>') + more;
+    const mb = $("cmMore"); if (mb) mb.onclick = () => { CM_PAGE++; cmNetLoad(true) };
   }catch(e){
     const cached = cmNetCached();
     body.innerHTML = cached.length
-      ? '<p class="cm-empty">Offline — showing the last themes you saw.</p>' + cached.map(cmNetTile).join("")
+      ? '<p class="cm-empty">Offline — showing the last themes you saw.</p>' + cached.map(r => cmNetTile(r)).join("")
       : '<p class="cm-empty">Offline. The curated themes above still install.</p>';
   }
 }
+/* The queue tab wears its workload: pending themes + pending stickers + open reports, three HEAD counts.
+   cmQueueLoad calls cmQueueBadge with exact numbers whenever the queue actually renders. */
+function cmQueueBadge(n){
+  const b = $("cmQueueBadgeN"); if (!b) return;
+  b.textContent = n > 99 ? "99+" : String(n);
+  b.hidden = !n;
+}
+async function cmQueueBadgeRefresh(){
+  try{
+    const [t, s, r] = await Promise.all([
+      SB.from("themes").select("*", {count: "exact", head: true}).eq("status", "pending"),
+      SB.from("stickers").select("*", {count: "exact", head: true}).eq("status", "pending"),
+      SB.from("reports").select("*", {count: "exact", head: true}).eq("handled", false),
+    ]);
+    cmQueueBadge((t.count | 0) + (s.count | 0) + (r.count | 0));
+  }catch(e){}
+}
+
 /* Browse results are cached so the panel degrades gracefully offline. Installs never depend on this —
    they are local by construction the moment they land in CUSTOM. */
 function cmNetCache(rows){ try{ safeStore.set("fs_cm_cache", JSON.stringify({t: Date.now(), rows: rows.slice(0, 40)})) }catch(e){} }
@@ -7952,12 +7992,15 @@ function cmNetTile(r, opts){
       + '<button class="mini-btn" data-net-act="save">Save</button>'
       + '<button class="mini-btn primary" data-net-act="use">Use</button>'
       + '<button class="mini-btn" data-net-act="report" title="Report this">⚑</button>';
-  /* the creator tag: every public tile names its author, and the name IS the door to their profile */
+  /* the creator tag: every public tile names its author, and the name IS the door to their creator page */
   const by = (!mine && r._by && r._by.handle)
-    ? '<button class="cm-by" data-by="' + esc(r._by.id) + '" title="See @' + esc(r._by.handle) + '’s profile">@' + esc(r._by.handle) + '</button>' : "";
+    ? '<button class="cm-by" data-by="' + esc(r._by.id) + '" title="See @' + esc(r._by.handle) + '’s creator page">@' + esc(r._by.handle) + '</button>' : "";
+  /* a rejection without its reason taught nobody anything (0010 stores what the moderator wrote) */
+  const why = (mine && r.status === "rejected" && r.reject_reason)
+    ? '<span class="cm-why">“' + esc(r.reject_reason) + '”</span>' : "";
   return '<article class="cm-card" data-net="' + esc(r.id) + '">'
     + cmRowThumb(r)
-    + '<div class="cm-meta"><b>' + esc(r.name) + '</b><span>♥ ' + (r.likes_count | 0) + ' · used ' + (r.uses_count | 0) + '</span>' + by + '</div>'
+    + '<div class="cm-meta"><b>' + esc(r.name) + '</b><span>♥ ' + (r.likes_count | 0) + ' · used ' + (r.uses_count | 0) + '</span>' + by + why + '</div>'
     + '<div class="cm-chips">' + chip + (r.tags || []).map(t => '<i>' + esc(t) + '</i>').join("") + '</div>'
     + '<div class="cm-act">' + acts + '</div></article>';
 }
@@ -8057,11 +8100,12 @@ async function cmStkLoad(){
   const box = $("cmStkNet"); if (!box || !SB) return;
   CM_STK_LOADED = true;
   const uid = CM_SESSION ? CM_SESSION.user.id : null;
-  let sel = SB.from("stickers").select("*, profiles!owner(handle)").order("created_at", {ascending: false}).limit(40);
+  let sel = SB.from("stickers").select("*").order("created_at", {ascending: false}).limit(40);
   /* signed in you also see your OWN pending/rejected rows (with a status chip); signed out, approved only */
   sel = uid ? sel.or("status.eq.approved,owner.eq." + uid) : sel.eq("status", "approved");
   const r = await sel;
   CM_STK = r.data || [];
+  if (typeof cmDecorateBy === "function") await cmDecorateBy(CM_STK);   // same author mechanism as themes
   box.innerHTML =
     '<div class="cm-bar"><b class="cm-stk-title">From the community</b><span class="spacer"></span>'
     + (CM_SESSION ? '<button class="mini-btn" id="cmStkPub">Publish a sticker</button>'
@@ -8076,11 +8120,13 @@ async function cmStkLoad(){
 }
 
 function cmStkTile(r){
-  const by = (r.profiles && r.profiles.handle) || "?";
+  const by = (r._by && r._by.handle) || "?";
   const chip = r.status !== "approved" ? '<i class="cm-status s-' + esc(r.status) + '">' + esc(r.status) + '</i>' : "";
+  const why = (CM_SESSION && r.owner === CM_SESSION.user.id && r.status === "rejected" && r.reject_reason)
+    ? '<span class="cm-why">“' + esc(r.reject_reason) + '”</span>' : "";
   return '<article class="cm-card cm-stk" data-stk="' + esc(r.id) + '">'
     + '<div class="cm-stk-img"><img src="' + esc(r.image_url) + '" alt="" loading="lazy"></div>'
-    + '<div class="cm-meta"><b>' + esc(r.name) + '</b><button class="cm-by" data-by="' + esc(r.owner) + '" title="See @' + esc(by) + '’s profile">@' + esc(by) + '</button></div>'
+    + '<div class="cm-meta"><b>' + esc(r.name) + '</b><button class="cm-by" data-by="' + esc(r.owner) + '" title="See @' + esc(by) + '’s creator page">@' + esc(by) + '</button>' + why + '</div>'
     + '<div class="cm-chips">' + chip + '</div>'
     + '<div class="cm-act"><button class="mini-btn primary" data-stk-act="install">Add to tray</button>'
     + (CM_SESSION && r.owner === CM_SESSION.user.id ? '<button class="mini-btn warn" data-stk-act="remove">Remove</button>' : "")
@@ -8163,15 +8209,17 @@ function cmNetRenderBar(){
   const net = $("cmNet"); if (!net) return;
   /* the signed-in chip is your own profile door: avatar + handle, clickable */
   const meChip = CM_SESSION
-    ? '<button class="cm-me" id="cmMe" title="Your profile">'
+    ? '<button class="cm-me" id="cmMe" title="Your creator page">'
       + (typeof cmAvatarHTML === "function" ? cmAvatarHTML(CM_MYPROF, "cm-av-bar") : "")
       + '<span>@' + esc((CM_MYPROF && CM_MYPROF.handle) || CM_SESSION.user.user_metadata.full_name || "you") + '</span></button>'
     : null;
+  const feeds = ["new", "top", "trending"].concat(CM_SESSION ? ["following", "mine", "saved"] : ["mine", "saved"]).concat(CM_MOD ? ["queue"] : []);
   net.innerHTML =
     '<div class="cm-bar">'
     + '<div class="seg" id="cmFeeds">'
-    + ["new", "top", "trending", "mine", "saved"].concat(CM_MOD ? ["queue"] : []).map(f =>
-        '<button data-feed="' + f + '"' + (CM_FEED === f ? ' class="on"' : "") + '>' + f + "</button>").join("")
+    + feeds.map(f =>
+        '<button data-feed="' + f + '"' + (CM_FEED === f ? ' class="on"' : "") + '>' + f
+        + (f === "queue" ? '<i class="cm-badge" id="cmQueueBadgeN" hidden></i>' : "") + "</button>").join("")
     + '</div><span class="spacer"></span>'
     + (meChip ? meChip + '<button class="mini-btn" id="cmPublish">Publish current</button>'
              + '<button class="mini-btn" id="cmSignOut">Sign out</button>'
@@ -8181,6 +8229,7 @@ function cmNetRenderBar(){
   const so = $("cmSignOut"); if (so) so.onclick = cmSignOut;
   const pub = $("cmPublish"); if (pub) pub.onclick = cmNetPublish;
   const me = $("cmMe"); if (me) me.onclick = () => { if (CM_SESSION && typeof cmProfileOpen === "function") cmProfileOpen(CM_SESSION.user.id) };
+  if (CM_MOD) cmQueueBadgeRefresh();   // fire-and-forget; the moderator learns about waiting work without clicking
   net.querySelectorAll("#cmFeeds button").forEach(b => b.onclick = () => { CM_FEED = b.dataset.feed; cmNetRenderBar(); cmNetLoad() });
   const body = $("cmNetBody");
   if (body) body.onclick = async e => {
@@ -8239,42 +8288,41 @@ async function cmDecorateBy(rows){
   return rows;
 }
 
+let CM_PROF_RETURN = null;      // the browsing element that opened the page — focus goes back there on close
+
 async function cmProfileOpen(uid){
   if (!SB || !uid) return;
+  if (!CM_PROF) CM_PROF_RETURN = document.activeElement;   // only the FIRST hop; page→page keeps the anchor
   CM_PROF = uid;
   const card = document.querySelector("#communityModal .modal-card");
   if (card) card.dataset.profileOpen = "1";
   const el = $("cmProfile"); if (!el) return;
   el.hidden = false;
-  el.innerHTML = '<p class="cm-empty">Loading profile…</p>';
+  el.innerHTML = '<p class="cm-empty">Loading creator page…</p>';
 
+  /* one round-trip wave: liked content rides PostgREST embeds (theme_likes→themes is a single FK, so no
+     ambiguity — unlike themes→profiles) instead of a second id-list wave. RLS filters the embedded rows,
+     so a liked-but-unapproved theme comes back as {themes:null} and is dropped below. */
   const me = CM_SESSION ? CM_SESSION.user.id : null;
   const [prof, th, stk, likedT, likedS, fwr, fwg, mine] = await Promise.all([
     SB.from("profiles").select("*").eq("id", uid).single(),
     SB.from("themes").select("*").eq("owner", uid).order("created_at", {ascending: false}).limit(24),
     SB.from("stickers").select("*").eq("owner", uid).order("created_at", {ascending: false}).limit(24),
-    SB.from("theme_likes").select("theme_id").eq("user_id", uid).limit(24),
-    SB.from("sticker_likes").select("sticker_id").eq("user_id", uid).limit(24),
+    SB.from("theme_likes").select("themes(*)").eq("user_id", uid).limit(24),
+    SB.from("sticker_likes").select("stickers(*)").eq("user_id", uid).limit(24),
     SB.from("follows").select("*", {count: "exact", head: true}).eq("followee", uid),
     SB.from("follows").select("*", {count: "exact", head: true}).eq("follower", uid),
     me && me !== uid ? SB.from("follows").select("followee").eq("follower", me).eq("followee", uid) : Promise.resolve({data: null}),
   ]);
   if (CM_PROF !== uid) return;                       // user already clicked through to someone else
-  if (prof.error || !prof.data){ el.innerHTML = '<p class="cm-empty">Couldn’t load that profile.</p>' + cmProfBackBtn(); cmProfBind(el); return }
+  if (prof.error || !prof.data){ el.innerHTML = cmProfBackBtn() + '<p class="cm-empty">Couldn’t load that creator page.</p>'; cmProfBind(el); return }
 
-  const tIds = (likedT.data || []).map(x => x.theme_id);
-  const sIds = (likedS.data || []).map(x => x.sticker_id);
-  const [likedThRows, likedStkRows] = await Promise.all([
-    tIds.length ? SB.from("themes").select("*").in("id", tIds) : Promise.resolve({data: []}),
-    sIds.length ? SB.from("stickers").select("*").in("id", sIds) : Promise.resolve({data: []}),
-  ]);
-  if (CM_PROF !== uid) return;
   CM_PROF_ROWS = {
     th: th.data || [], stk: stk.data || [],
-    likedTh: likedThRows.data || [], likedStk: likedStkRows.data || [],
+    likedTh: (likedT.data || []).map(x => x.themes).filter(Boolean),
+    likedStk: (likedS.data || []).map(x => x.stickers).filter(Boolean),
   };
-  await cmDecorateBy(CM_PROF_ROWS.likedTh);
-  await cmDecorateBy(CM_PROF_ROWS.likedStk);
+  await cmDecorateBy(CM_PROF_ROWS.likedTh.concat(CM_PROF_ROWS.likedStk));   // one query decorates both
 
   /* follows may simply not exist yet (0008 not applied). A HEAD count against a missing table comes back
      204 with error:null AND count:null (no body to carry the error) — a real empty table counts 0. So
@@ -8297,12 +8345,17 @@ async function cmProfileOpen(uid){
     + (isMe
         ? '<button class="mini-btn" data-prof-act="avatar">Change picture</button>'
           + '<button class="mini-btn" data-prof-act="bio">Edit bio</button>'
-        : (CM_SESSION && followsLive
-            ? '<button class="mini-btn' + (following ? "" : " primary") + '" data-prof-act="follow">' + (following ? "Following ✓" : "Follow") + '</button>'
+        : (CM_SESSION
+            ? (followsLive
+                ? '<button class="mini-btn' + (following ? "" : " primary") + '" data-prof-act="follow">' + (following ? "Following ✓" : "Follow") + '</button>' : "")
+              + '<button class="mini-btn" data-prof-act="report" title="Report this creator page">⚑</button>'
             : ""))
     + '</div>'
     + '<div class="cm-prof-body" id="cmProfBody">' + cmProfSections(isMe) + '</div>';
   cmProfBind(el);
+  /* the tile that opened this page is display:none now — without this, keyboard focus falls to <body>
+     and a screen reader goes silent. Back is the natural landing (and Esc still closes the modal). */
+  const back = el.querySelector("[data-prof-act=back]"); if (back) back.focus();
 }
 
 function cmProfBackBtn(){
@@ -8336,6 +8389,11 @@ function cmProfileClose(){
   const card = document.querySelector("#communityModal .modal-card");
   if (card) delete card.dataset.profileOpen;
   const el = $("cmProfile"); if (el){ el.hidden = true; el.innerHTML = "" }
+  /* hand focus back to the element that opened the page — if a re-render replaced it, the search box is
+     the stable fallback inside the modal */
+  const ret = CM_PROF_RETURN; CM_PROF_RETURN = null;
+  if (ret && document.contains(ret)) ret.focus();
+  else { const s = $("cmSearch"); if (s) s.focus() }
 }
 
 function cmProfBind(el){
@@ -8347,6 +8405,7 @@ function cmProfBind(el){
       else if (a === "follow") await cmFollowToggle(CM_PROF, act);
       else if (a === "avatar") cmAvatarPick();
       else if (a === "bio") await cmBioEdit();
+      else if (a === "report") await cmProfileReport(CM_PROF);
       return;
     }
     const list = e.target.closest("[data-prof-list]");
@@ -8433,6 +8492,15 @@ async function cmAvatarUpload(file){
     cmNetRenderBar();                                                                     // the bar chip shows it too
   }catch(e){ toast("Couldn't read that image", 4000) }
 }
+/* profiles joined the reportable kinds in 0010 — an offensive avatar/bio was the only public content
+   with no report path (themes and stickers had one from day one) */
+async function cmProfileReport(uid){
+  if (!CM_SESSION){ toast("Sign in with Discord to report"); return }
+  const reason = prompt("What's wrong with this creator page?");
+  if (!reason) return;
+  const {error} = await SB.from("reports").insert({reporter: CM_SESSION.user.id, item_kind: "profile", item_id: uid, reason: reason.slice(0, 500)});
+  toast(error ? "You've already reported this page" : "Reported — a moderator will take a look");
+}
 async function cmBioEdit(){
   if (!SB || !CM_SESSION) return;
   const cur = await SB.from("profiles").select("bio").eq("id", CM_SESSION.user.id).single();
@@ -8467,12 +8535,17 @@ async function cmQueueLoad(body){
   CM_QUEUE = pending.data || [];
   const reps = await SB.from("reports").select("*").eq("handled", false).order("created_at");
   const repRows = reps.data || [];
-  /* a report without the item's NAME is unactionable — resolve them (moderator read sees every status) */
+  /* a report without the item's NAME is unactionable — resolve them (moderator read sees every status).
+     Since 0010 a report can also name a PROFILE — those resolve to handles. */
   const ids = [...new Set(repRows.filter(r => r.item_kind === "theme").map(r => r.item_id))];
   const named = ids.length ? await SB.from("themes").select("id,name").in("id", ids) : {data: []};
   const nameOf = {}; (named.data || []).forEach(t => nameOf[t.id] = t.name);
+  const pids = [...new Set(repRows.filter(r => r.item_kind === "profile").map(r => r.item_id))];
+  const pnamed = pids.length ? await SB.from("profiles").select("id,handle").in("id", pids) : {data: []};
+  (pnamed.data || []).forEach(pr => nameOf[pr.id] = "@" + pr.handle);
   const pStk = await SB.from("stickers").select("*, profiles!owner(handle,discord_id)").eq("status", "pending").order("created_at");
   CM_QUEUE_STK = pStk.data || [];
+  cmQueueBadge(CM_QUEUE.length + CM_QUEUE_STK.length + repRows.length);   // the tab tells the truth it just learned
   body.innerHTML =
     ((CM_QUEUE.length || CM_QUEUE_STK.length)
       ? CM_QUEUE.map(cmModTile).join("") + CM_QUEUE_STK.map(cmModStkTile).join("")
@@ -8506,15 +8579,35 @@ function cmModTile(r){
     + '</div></article>';
 }
 function cmRepRow(r, nameOf){
-  const what = r.item_kind === "theme" ? "theme “" + ((nameOf || {})[r.item_id] || "deleted") + "”" : r.item_kind;
-  return '<div class="cm-rep" data-rep="' + esc(r.id) + '"><span>' + esc(what) + ' · ' + esc(String(r.reason).slice(0, 120)) + '</span>'
+  const what = r.item_kind === "theme"   ? "theme “" + ((nameOf || {})[r.item_id] || "deleted") + "”"
+             : r.item_kind === "profile" ? "creator page " + ((nameOf || {})[r.item_id] || "(deleted)")
+             : r.item_kind;
+  return '<div class="cm-rep" data-rep="' + esc(r.id) + '" data-rep-item="' + esc(r.item_id) + '" data-rep-kind="' + esc(r.item_kind) + '"><span>' + esc(what) + ' · ' + esc(String(r.reason).slice(0, 120)) + '</span>'
+    + (r.item_kind === "profile" ? '<button class="mini-btn warn" data-rep-act="clear">Clear picture &amp; bio</button>' : "")
     + '<button class="mini-btn" data-rep-act="handled">Handled</button></div>';
 }
 async function cmModerate(row, status, table){
-  const {error} = await SB.from(table || "themes").update({status}).eq("id", row.id);
+  const patch = {status};
+  if (status === "rejected"){
+    /* the reason reaches the publisher under *mine* — a bare "rejected" chip taught nobody anything */
+    const why = prompt("Why is “" + row.name + "” rejected? (shown to the publisher, optional)", "");
+    if (why === null) return;                                   // moderator changed their mind
+    patch.reject_reason = why.trim().slice(0, 300) || null;
+  } else patch.reject_reason = null;                            // (re-)approval clears any stale reason
+  const {error} = await SB.from(table || "themes").update(patch).eq("id", row.id);
   toast(error ? ("Couldn't update: " + error.message)
               : (status === "approved" ? "“" + row.name + "” is live for everyone ✦" : "“" + row.name + "” rejected"));
   await cmNetLoad();
+}
+/* profile moderation (0010): null the avatar/bio row fields, then delete the storage object — the row is
+   what every surface renders, the object delete just stops the raw URL serving (CDN edge may linger). */
+async function cmModClearProfile(uid){
+  if (!confirm("Clear this creator page's picture and bio?")) return false;
+  const up = await SB.from("profiles").update({avatar_url: null, bio: null}).eq("id", uid);
+  if (up.error){ toast("Couldn't clear: " + up.error.message, 5000); return false }
+  await SB.storage.from("avatars").remove([uid + "/avatar.png"]).catch(() => {});
+  toast("Cleared — their picture and bio are gone");
+  return true;
 }
 
 /* Called first from the shared feed-body click handler; true = the click was a moderation button. */
@@ -8537,8 +8630,11 @@ async function cmModDispatch(e){
   }
   const rbtn = e.target.closest("button[data-rep-act]");
   if (rbtn){
-    const rid = rbtn.closest("[data-rep]").dataset.rep;
-    const {error} = await SB.from("reports").update({handled: true}).eq("id", rid);
+    const rep = rbtn.closest("[data-rep]");
+    if (rbtn.dataset.repAct === "clear"){
+      if (!await cmModClearProfile(rep.dataset.repItem)) return true;   // declined or failed — report stays open
+    }
+    const {error} = await SB.from("reports").update({handled: true}).eq("id", rep.dataset.rep);
     toast(error ? "Couldn't update the report" : "Report closed");
     await cmNetLoad();
     return true;
