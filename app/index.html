@@ -626,6 +626,7 @@ body.sp-live #trackLiveNote{display:block}
 .frame[data-layout="square"] .dino-peek{top:-14px;left:auto;right:4%;margin-left:0;width:72px} /* label row sits on the art top in square — keep the peek small and past the text */
 .blink{transform-origin:center 39px}
 .paw-trail{bottom:12px;left:14px;width:64px;opacity:.32;z-index:0}
+.frame[data-layout="square"] .paw-trail{opacity:.16} /* square puts the times row over the paws — keep the numbers readable */
 .paw-trail svg{display:block;width:100%}
 /* Cat Nap. Ears go top-RIGHT, not top-left: they need z-index 2 to sit on the card's top edge, and the
    "NOW PURRING" label is left-aligned in that same row, so anchoring left would bury it. Tail and yarn stay
@@ -868,9 +869,14 @@ body.sp-live #trackLiveNote{display:block}
    and would miss these — which is harmless here because every --r-* is 0 during export, so they are all
    identity. Same reason `filter` is allowed here but not in motion.
 
-   --rx-op0 / --rx-f0 carry the element's ORIGINAL opacity and filter, captured before the effect is
-   attached: `opacity` and `filter` are absolute properties, so writing them bare would erase .leaf-corner's
-   opacity:.3 or .stkr's drop-shadow. */
+   --rx-op0 / --rx-f0 / --rx-sh0 carry the element's ORIGINAL opacity, filter and box-shadow, captured
+   before the effect is attached: these are absolute properties, so writing them bare would erase
+   .leaf-corner's opacity:.3, .stkr's drop-shadow or .planet's ambient glow.
+
+   EVERY effect's rest pose (--r-v:0) must equal the element's base style — the same contract the motion
+   presets carry. An effect that "rests" anywhere else changes how the theme LOOKS the moment audio is
+   merely enabled, and un-syncs exports from the pixel-gate baselines (twinkle once rested at .55×base:
+   nine specs drifted and the hunt ran through five wrong theories before landing here). */
 [data-rx]{ --r-v: 0 }
 [data-rx="pulse"]   { scale: calc(1 + var(--r-v,0) * .18) }
 [data-rx="bounce"]  { translate: 0 calc(var(--r-v,0) * -9px) }
@@ -879,12 +885,16 @@ body.sp-live #trackLiveNote{display:block}
    "unsupported color function" — which kills the whole export, not just the shadow. rgb() with a var for the
    channels and a calc() alpha serialises to plain rgba(), which its 2021 parser reads fine, and lands at
    rgba(...,0) at rest so there is no shadow to paint on a transparent box. --rx-glow-rgb is set per element
-   from the theme accent in rxAttach. */
-[data-rx="glow"]    { box-shadow: 0 0 calc(var(--r-v,0) * 20px) rgb(var(--rx-glow-rgb, 255 255 255) / calc(var(--r-v,0) * .6)) }
+   from the theme accent in rxAttach. The first layer is the element's OWN captured shadow (--rx-sh0):
+   box-shadow is absolute, so without it the glow effect ERASED .planet's 34px ambient glow whenever it was
+   attached — the falls-back zero-size transparent layer keeps the declaration valid for shadowless hosts. */
+[data-rx="glow"]    { box-shadow: var(--rx-sh0, 0 0 0 rgba(0,0,0,0)), 0 0 calc(var(--r-v,0) * 20px) rgb(var(--rx-glow-rgb, 255 255 255) / calc(var(--r-v,0) * .6)) }
 [data-rx="brighten"]{ filter: var(--rx-f0,) brightness(calc(1 + var(--r-v,0) * .45)) }
 [data-rx="hue"]     { filter: var(--rx-f0,) hue-rotate(calc(var(--r-v,0) * 45deg)) }
 [data-rx="opacity"] { opacity: calc(var(--rx-op0,1) * (1 - var(--r-v,0) * .55)) }
-[data-rx="twinkle"] { opacity: calc(var(--rx-op0,1) * (.55 + var(--r-v,0) * .45)) }
+/* twinkle DIPS from base rather than sitting dim and flashing up: most twinkle hosts (the y2k bubbles)
+   have base opacity 1, so "up" has no headroom anyway, and resting below base broke the rest==base rule. */
+[data-rx="twinkle"] { opacity: calc(var(--rx-op0,1) * (1 - var(--r-v,0) * .45)) }
 
 /* ================= MOTION REGISTRY =================
    Presets are DATA in js/motion-presets.js; js/motion.js writes --m-kf/--m-dur/--m-ease/--m-amt/--m-delay
@@ -1129,6 +1139,39 @@ body .mini-btn.primary:hover{background:var(--leaf-hover,var(--leaf-dark))}
 .cm-stk-tray button{width:52px;height:52px;border:1.5px solid var(--line);border-radius:10px;background:var(--panel);cursor:pointer;padding:5px}
 .cm-stk-tray button:hover{border-color:var(--leaf)}
 .cm-stk-tray img{width:100%;height:100%;object-fit:contain}
+
+/* ---------- community profiles ---------- */
+/* while a profile is open it REPLACES the browsing surfaces — original hidden flags stay untouched,
+   so closing simply removes the attribute and the panel is exactly as you left it */
+#communityModal .modal-card[data-profile-open] > :not(.cm-profile):not(.modal-head){display:none}
+.cm-by{background:none;border:0;padding:0;cursor:pointer;font:inherit;font-size:11px;font-weight:800;
+  color:var(--leaf-dark,var(--leaf));letter-spacing:.01em;text-align:left;width:fit-content}
+.cm-by:hover{text-decoration:underline}
+.cm-me{display:inline-flex;align-items:center;gap:6px;background:none;border:0;padding:2px 4px;cursor:pointer;
+  font:inherit;font-size:12px;font-weight:800;color:var(--ink);border-radius:999px}
+.cm-me:hover{background:var(--leaf-tint)}
+.cm-av-bar{width:20px;height:20px;border-radius:50%;object-fit:cover}
+.cm-av-big{width:72px;height:72px;border-radius:50%;object-fit:cover;flex:none}
+.cm-av-mini{width:26px;height:26px;border-radius:50%;object-fit:cover;flex:none}
+.cm-av-fallback{display:inline-flex;align-items:center;justify-content:center;background:var(--leaf-tint);
+  color:var(--leaf-dark,var(--leaf));font-weight:900}
+.cm-av-fallback.cm-av-big{font-size:28px}
+.cm-prof-bar{margin-bottom:2px}
+.cm-prof-head{display:flex;align-items:center;gap:14px;padding:10px 2px 14px}
+.cm-prof-id{display:flex;flex-direction:column;gap:3px;min-width:0}
+.cm-prof-id > b{font-size:16px}
+.cm-prof-bio{margin:0;font-size:12px;color:var(--ink-soft);max-width:420px;overflow-wrap:break-word}
+.cm-prof-dim{opacity:.65;font-style:italic}
+.cm-prof-counts{font-size:12px;color:var(--ink-soft)}
+.cm-plain{background:none;border:0;padding:0;cursor:pointer;font:inherit;color:inherit}
+.cm-plain:hover{text-decoration:underline}
+.cm-prof-sec{font-size:11px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft);
+  margin:14px 2px 8px}
+.cm-prof-body .cm-grid{margin-top:0}
+.cm-people{display:flex;flex-wrap:wrap;gap:8px}
+.cm-person{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:999px;
+  background:var(--panel);padding:5px 12px 5px 6px;cursor:pointer;font:inherit;font-size:12px;font-weight:800;color:var(--ink)}
+.cm-person:hover{border-color:var(--leaf)}
 /* Spotify attribution mark in the Now playing panel (Policy II.4.a — chrome, not the card) */
 .sp-mark{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:800;color:var(--ink-soft);margin-left:auto;letter-spacing:.03em}
 .sp-mark svg{width:13px;height:13px}
@@ -1238,6 +1281,11 @@ details.guide code{background:#fff;border:1px solid var(--line);border-radius:5p
 
 /* ---------- desktop-app widget mode ---------- */
 body.widget{overflow:hidden}
+/* the not-live tell (widget only): a live track always carries a uri; no uri = demo content */
+body.widget .demo-chip{position:absolute;top:34px;right:34px;z-index:9;font-size:9px;font-weight:900;
+  letter-spacing:.08em;text-transform:uppercase;background:rgba(20,20,20,.55);color:#fff;
+  border-radius:999px;padding:2px 7px;pointer-events:none}
+body.widget .demo-chip[hidden]{display:none}
 body.widget .topbar,body.widget .side,body.widget .tipbar,body.widget .corner,body.widget .float-note{display:none !important}
 body.widget .shell{grid-template-columns:1fr}
 body.widget .stage{position:fixed;inset:0;min-height:0;overflow:hidden;-webkit-app-region:drag}
@@ -1875,6 +1923,7 @@ body[data-studio="blackcat"] .home[data-deco="on"] .hm::after{
       <div class="hint" id="home-deco-hint">Paw prints and a cat show up on the Ginger and Black cat palettes (⚙ Settings → Appearance).</div>
       <div class="hm-pop-foot">
         <span class="hint">Your listening history stays on this PC.</span>
+        <button class="mini-btn" id="homeExport">Export history</button>
         <button class="mini-btn warn" id="homeWipe">Delete history</button>
       </div>
     </div>
@@ -2067,6 +2116,7 @@ body[data-studio="blackcat"] .home[data-deco="on"] .hm::after{
     <div class="cm-grid" id="cmGrid"></div>
     <div id="cmStkNet" hidden></div>
     <div class="cm-net" id="cmNet" hidden></div>
+    <div class="cm-profile" id="cmProfile" hidden></div>
     <div class="cm-foot">
       <span class="hint">Curated themes ship with FrameSaur; installing anything keeps it local. Publishing sends only the theme you choose — never your Spotify login or listening data.</span>
     </div>
@@ -2234,6 +2284,8 @@ body[data-studio="blackcat"] .home[data-deco="on"] .hm::after{
               <button class="btn btn-primary" id="upd-install" style="padding:8px 12px;font-size:12.5px" hidden>Restart to update</button>
             </div>
           </div>
+          <div class="hint" id="upd-latest" hidden></div>
+          <div class="hint" id="upd-notes" hidden style="white-space:pre-wrap;max-height:180px;overflow-y:auto"></div>
           <div class="set-sec">Help</div>
           <div class="row-tight">
             <button class="mini-btn" id="set-shortcuts">⌨ Keyboard shortcuts</button>
@@ -4269,19 +4321,27 @@ function rxForTheme(){
    --r-v: var(--r-<target>) is a static indirection the cascade resolves every time the frame's var moves. */
 function rxAttach(el, r){
   if (!el) return;
-  if (el.dataset.rx !== r.effect) el.dataset.rx = r.effect;
-  const v = "var(--r-" + r.target + ",0)";
-  if (el.style.getPropertyValue("--r-v") !== v) el.style.setProperty("--r-v", v);
-  /* opacity and filter are absolute — capture what the element had BEFORE the effect is attached, or
-     .leaf-corner's opacity:.3 and .stkr's drop-shadow get erased. Cached on the node so a re-attach can
-     never read back a value the effect itself produced. */
+  /* opacity, filter and box-shadow are absolute — capture what the element had BEFORE the effect is
+     attached, or .leaf-corner's opacity:.3, .stkr's drop-shadow and .planet's ambient glow get erased.
+     This block MUST run before data-rx is written: with the attribute already on, getComputedStyle reads
+     THROUGH the effect rule and the capture bakes the effect's own output in as the "base" (that is how
+     op0 once recorded 0.56 — the old twinkle formula's rest — instead of 1). The read also suppresses the
+     element's own animation: motion presets animate opacity (m-twinkle), and a mid-flight sample would
+     bake an animation frame in the same way. Cached on the node so a re-attach never re-captures. */
   if (!el.dataset.rxBase) {
+    const hadAnim = el.style.animation;
+    el.style.animation = "none";
     const cs = getComputedStyle(el);
-    const op = cs.opacity, f = cs.filter;
+    const op = cs.opacity, f = cs.filter, sh = cs.boxShadow;
+    el.style.animation = hadAnim;
     el.dataset.rxBase = "1";
     if (op && op !== "1") el.style.setProperty("--rx-op0", op);
     if (f && f !== "none") el.style.setProperty("--rx-f0", f);
+    if (sh && sh !== "none") el.style.setProperty("--rx-sh0", sh);
   }
+  if (el.dataset.rx !== r.effect) el.dataset.rx = r.effect;
+  const v = "var(--r-" + r.target + ",0)";
+  if (el.style.getPropertyValue("--r-v") !== v) el.style.setProperty("--r-v", v);
   /* The glow colour is resolved HERE, as space-separated channels, so the CSS can build a plain rgba().
      Doing it in CSS with color-mix() computes to color(srgb ...) and html2canvas 1.4.1 throws on that,
      taking the entire export down with it. */
@@ -4295,7 +4355,7 @@ function rxAttach(el, r){
 function rxDetach(el){
   if (!el || !el.hasAttribute("data-rx")) return;
   el.removeAttribute("data-rx");
-  ["--r-v", "--rx-op0", "--rx-f0", "--rx-glow-rgb"].forEach(k => el.style.removeProperty(k));
+  ["--r-v", "--rx-op0", "--rx-f0", "--rx-sh0", "--rx-glow-rgb"].forEach(k => el.style.removeProperty(k));
   delete el.dataset.rxBase;
 }
 
@@ -4313,9 +4373,12 @@ function applyReactions(){
   const sig = JSON.stringify(rows) + "|" + frame.dataset.theme + "|" + state.layout;
   if (sig === RX_SIG) { rxSubscribe(rows.length > 0); return }
   RX_SIG = sig;
-  const seen = new Set();
-  for (const r of rows) { seen.add(r.target); motionEls(r.target).forEach(el => rxAttach(el, r)) }
-  for (const t of MOTION_TARGETS) if (!seen.has(t)) motionEls(t).forEach(rxDetach);
+  const seen = new Set(), wired = new Set();
+  for (const r of rows) { seen.add(r.target); motionEls(r.target).forEach(el => { rxAttach(el, r); wired.add(el) }) }
+  /* Sweep the WHOLE frame, not just the current theme's targets: motionEls is theme-scoped, so a
+     target-by-target detach can never reach another theme's decorations — an element attached under
+     space kept data-rx="glow" (base box-shadow stomped) through every later theme until reload. */
+  frame.querySelectorAll("[data-rx]").forEach(el => { if (!wired.has(el)) rxDetach(el) });
   RX_ROWS = rows;
   for (const k of Object.keys(RX_VAL)) if (!seen.has(k)) delete RX_VAL[k];
   rxNeutral();                                     // start from rest; the bus drives it up from there
@@ -5062,6 +5125,25 @@ $("set-striphover").addEventListener("change",e=>{ safeStore.set("fs_strip_hover
 $("set-idle").addEventListener("change",e=>{ safeStore.set("fs_idle",e.target.checked?"1":"0"); applyWidgetPrefs() });
 $("set-idle-min").addEventListener("input",e=>{ safeStore.set("fs_idle_min",e.target.value); applyWidgetPrefs() });
 
+/* What's new: friends updated blind (portable users doubly so). The release notes already exist on every
+   GitHub release; fetch this version's once, cache it, render as plain text. Offline = block stays hidden. */
+let UPD_NOTES_FOR=null;
+async function updNotes(ver){
+  const el=$("upd-notes"); if(!el||UPD_NOTES_FOR===ver) return;
+  UPD_NOTES_FOR=ver;
+  const cached=safeStore.get("fs_relnotes_"+ver);
+  if(cached){ el.textContent="What's new in "+ver+"\n\n"+cached; el.hidden=false; return }
+  try{
+    const r=await fetch("https://api.github.com/repos/garyzd04/FrameSaur-releases/releases/tags/v"+ver);
+    if(!r.ok) return;
+    const body=String(((await r.json())||{}).body||"").replace(/\r/g,"").trim();
+    if(!body) return;
+    const plain=body.replace(/\*\*/g,"").slice(0,4000);
+    safeStore.set("fs_relnotes_"+ver, plain);
+    el.textContent="What's new in "+ver+"\n\n"+plain; el.hidden=false;
+  }catch(e){}
+}
+
 /* settings backup / restore — a whitelist of safeStore keys; sign-in tokens, the OAuth verifier/state and the
    Discord webhook are never exported, and never imported even if a file contains them */
 const BACKUP_KEYS=["fs_client_id","fs_custom_themes","fs_custom_stickers","fs_theme_stickers","fs_last","fs_studio_appearance","fs_studio_light","fs_studio_darkpal",
@@ -5244,10 +5326,43 @@ async function syncAudioUI(){
 }
 
 /* ================= AUTO-UPDATE STATUS (installed desktop builds; the studio only displays what main reports) ================= */
+/* Portable and dev builds have the auto-updater DISABLED — which meant nobody on a portable exe ever
+   heard about a release. This probe asks GitHub for the latest tag (6h cache), and if it's newer than the
+   running build: a line + download link in the panel, and a once-per-version toast. Installed builds skip
+   it — electron-updater already handles them (the "ready" toast below). */
+let UPD_PROBED=false;
+async function updLatestProbe(cur){
+  if(UPD_PROBED||!cur) return; UPD_PROBED=true;
+  try{
+    let c=null; try{ c=JSON.parse(safeStore.get("fs_upd_latest")||"null") }catch(e){}
+    if(!c || !c.ver || (Date.now()-c.t) > 216e5){
+      const r=await fetch("https://api.github.com/repos/garyzd04/FrameSaur-releases/releases/latest");
+      if(!r.ok) return;
+      c={t:Date.now(), ver:String((((await r.json())||{}).tag_name)||"").replace(/^v/,"")};
+      if(!/^\d+\.\d+\.\d+$/.test(c.ver)) return;
+      safeStore.set("fs_upd_latest",JSON.stringify(c));
+    }
+    const newer=(a,b)=>{const A=a.split(".").map(Number),B=b.split(".").map(Number);
+      for(let i=0;i<3;i++){ if((A[i]||0)!==(B[i]||0)) return (A[i]||0)>(B[i]||0) } return false};
+    if(!newer(c.ver,cur)) return;
+    const el=$("upd-latest");
+    if(el){
+      el.innerHTML='FrameSaur <b>'+c.ver+'</b> is out (you’re on '+esc(cur)+') — <a href="#" id="upd-dl">download it</a>.';
+      el.hidden=false;
+      const a=$("upd-dl"); if(a) a.onclick=e=>{ e.preventDefault(); openExternalUrl("https://github.com/garyzd04/FrameSaur-releases/releases/latest") };
+    }
+    if(safeStore.get("fs_seen_avail_"+c.ver)!=="1"){
+      safeStore.set("fs_seen_avail_"+c.ver,"1");
+      toast("FrameSaur "+c.ver+" is out — you’re on "+cur+". Grab it under ⚙ → Updates.",8000);
+    }
+  }catch(e){}
+}
 function updRender(s){
   if(!s) return;
   const st=$("upd-status"), v=$("upd-version"), chk=$("upd-check"), inst=$("upd-install");
   if(v&&s.appVersion) v.textContent="v"+s.appVersion;
+  if(s.appVersion) updNotes(s.appVersion);
+  if(s.status==="disabled"&&s.appVersion) updLatestProbe(s.appVersion);
   const txt = s.status==="disabled" ? (s.error==="portable" ? "Portable build — download the installer from GitHub for automatic updates." : s.error==="dev" ? "Development build — updates are checked in installed builds only." : "Updates unavailable.")
     : s.status==="checking" ? "Checking for updates…"
     : s.status==="none" ? "You're up to date."
@@ -5954,7 +6069,7 @@ function renderSpotify(){
       (idBad?'<div class="hint warn-text">That doesn’t look like a Client ID (32 letters/digits, no spaces).</div>':'')+
       '</div></div>'+
       '<div class="ob-row">'+done(idOk)+'<div><b>2. Register this redirect URI</b> in that app’s settings — it must match exactly.'+
-      '<div class="copy-row" style="margin:6px 0 0"><code>'+REDIRECT_URI+'</code><button class="mini-btn" id="sp-copy">Copy</button></div></div></div>'+
+      '<div class="copy-row" style="margin:6px 0 0"><code>'+REDIRECT_URI.replace("/callback","/<wbr>callback")+'</code><button class="mini-btn" id="sp-copy">Copy</button></div></div></div>'+
       '<div class="ob-row">'+done(false)+'<div><b>3. Connect</b> and approve in the browser tab that opens.'+
       '<button class="btn btn-spotify" id="sp-connect" style="margin-top:6px"'+(idOk?"":" disabled")+'>Connect Spotify</button></div></div>'+
       '<div class="hint">Using someone else’s app (a friend set it up)? Just paste <i>their</i> Client ID — they need to add your Spotify email under <i>User Management</i> in the dashboard.</div></div>';
@@ -6275,6 +6390,18 @@ function parseHistoryRow(row){
   } else if ("msPlayed" in row || "trackName" in row) {                      // basic account export
     title = row.trackName; artist = row.artistName; album = ""; uri = null;
     ms = row.msPlayed; end = statsParseTs(row.endTime);
+  } else if (row.__fs === 1) {                                              // FrameSaur's own export (round-trip)
+    /* native rows may carry ms:null — backfilled plays whose duration Spotify never disclosed. The
+       Spotify-shaped branches must drop those (no honest ms), but our own format preserves them. */
+    title = row.title; artist = row.artist; album = row.album || "";
+    uri = row.uri || null; end = +row.end;
+    ms = (row.ms == null) ? null : +row.ms;
+    if (!title || !artist || !Number.isFinite(end)) return null;
+    if (ms != null && (!Number.isFinite(ms) || ms < STATS_MIN_PLAY_MS)) return null;
+    const t0 = ms != null ? end - ms : end;
+    return { uri, title: String(title), artist: String(artist), primary: String(artist),
+             album: String(album), t: t0, end, ms, dur: null, src: row.src === "live" ? "live" : "import",
+             day: statsDayKey(t0) };
   } else return null;
   // podcast rows and metadata-less rows carry nulls in every track field — they are not music plays
   if (!title || !artist) return null;
@@ -6284,14 +6411,24 @@ function parseHistoryRow(row){
   return { uri: uri || null, title: String(title), artist: String(artist), primary: String(artist),
            album: String(album || ""), t, end, ms, dur: null, src: "import", day: statsDayKey(t) };
 }
+function statsExportFile(rows){
+  /* raw plays only (rolling 12-month window): merging exported AGGREGATES against live-logged data could
+     double-count, and row-level dedupe protects a re-import of this file completely. Honest > complete. */
+  return { framesaur_history: 1, exported_at: null,
+    note: "FrameSaur listening history. Raw plays from the rolling 12-month window; re-importing merges and dedupes.",
+    rows: (rows || []).map(r => ({ __fs: 1, uri: r.uri || null, title: r.title, artist: r.artist,
+      album: r.album || "", end: r.end, ms: r.ms == null ? null : r.ms, src: r.src === "live" ? "live" : "import" })) };
+}
 function parseHistoryFile(json){
   let rows = json;
   if (typeof rows === "string") { try { rows = JSON.parse(rows) } catch (e) { return { kind: "unreadable", rows: [], seen: 0, skipped: 0 } } }
+  if (rows && rows.framesaur_history === 1 && Array.isArray(rows.rows)) rows = rows.rows;  // our own export wraps its rows
   if (!Array.isArray(rows)) return { kind: "unknown", rows: [], seen: 0, skipped: 0 };
   const out = []; let skipped = 0;
   for (const r of rows) { const p = parseHistoryRow(r); if (p) out.push(p); else skipped++; }
   const first = rows.find(r => r && typeof r === "object") || {};
-  const kind = ("ms_played" in first || "master_metadata_track_name" in first) ? "extended"
+  const kind = (first.__fs === 1) ? "framesaur"
+             : ("ms_played" in first || "master_metadata_track_name" in first) ? "extended"
              : ("msPlayed" in first || "trackName" in first) ? "basic"
              : out.length ? "mixed" : "unknown";
   return { kind, rows: out, seen: rows.length, skipped };
@@ -6452,7 +6589,7 @@ if (typeof module !== "undefined" && module.exports) module.exports = {
   STATS_MIN_PLAY_MS, STATS_WINDOW_DAYS, STATS_DEDUPE_MS, STATS_SLACK_MS, STATS_RANGES, SP_TOP_RANGES,
   playDelta, isReplay,
   statsLc, statsDayKey, statsKeyToMs, statsDayAdd, statsParseTs,
-  parseHistoryRow, parseHistoryFile, statsPlayKey, dedupePlays,
+  parseHistoryRow, parseHistoryFile, statsExportFile, statsPlayKey, dedupePlays,
   foldDaily, foldTracks, foldArtists, mergeDay, mergeRow, statsBlankDay,
   rangeTotals, clockBuckets, streak, topFrom, msHuman, statsRange, spTopRangeLabel,
 };
@@ -6993,6 +7130,16 @@ async function homeInit(){
   applyHomeDeco();
   deco.addEventListener("change", () => { safeStore.set("fs_home_deco", deco.checked ? "1" : "0"); applyHomeDeco() });
   $("homeGear").addEventListener("click", () => { $("homeMods").hidden = !$("homeMods").hidden });
+  $("homeExport").addEventListener("click", async () => {
+    const rows = await statsAllPlays();
+    if (!rows.length){ toast("Nothing to export yet — the log is empty."); return }
+    const file = statsExportFile(rows); file.exported_at = new Date().toISOString();
+    const a = document.createElement("a");
+    a.download = "framesaur-history-" + statsDayKey(Date.now()) + ".json";
+    a.href = "data:application/json;charset=utf-8," + encodeURIComponent(JSON.stringify(file));
+    a.click();
+    toast(rows.length + " plays exported — drop the file on Import on another PC to merge it.", 5000);
+  });
   document.addEventListener("click", e => {
     const p = $("homeMods");
     if (!p || p.hidden) return;
@@ -7638,6 +7785,7 @@ let SB = null;                 // the supabase-js client, created on first open
 let SB_LOADING = null;         // in-flight loader promise (cleared from .then, never a finally — see js/audio.js)
 let CM_FEED = "new";           // new | top | trending | mine | saved
 let CM_SESSION = null;
+let CM_MYPROF = null;          // own profiles row (handle/avatar for the bar chip); refreshed on sign-in
 
 
 function cmNetConfigured(){
@@ -7681,7 +7829,9 @@ async function cmNetOpen(){
       const {data} = await SB.auth.getSession();
       CM_SESSION = data && data.session;
       await cmCheckMod();
+      await cmMyProfLoad();
     }
+    if (typeof cmProfileClose === "function") cmProfileClose();   // reopening the panel always lands on browsing
     cmNetRenderBar();
     await cmNetLoad();
   }catch(e){
@@ -7707,6 +7857,7 @@ async function cmSignIn(){
       if (ex.error) throw ex.error;
       CM_SESSION = ex.data.session;
       await cmCheckMod();
+      await cmMyProfLoad();
     } else {
       await SB.auth.signInWithOAuth({provider: "discord", options: {redirectTo: location.href}});
       return;                                   // browser mode navigates away and comes back
@@ -7717,9 +7868,15 @@ async function cmSignIn(){
 }
 async function cmSignOut(){
   if (!SB) return;
-  await SB.auth.signOut(); CM_SESSION = null; CM_MOD = false;
+  await SB.auth.signOut(); CM_SESSION = null; CM_MOD = false; CM_MYPROF = null;
   if (CM_FEED === "queue") CM_FEED = "new";
+  if (typeof cmProfileClose === "function") cmProfileClose();
   cmNetRenderBar(); await cmNetLoad();
+}
+async function cmMyProfLoad(){
+  CM_MYPROF = null;
+  if (!SB || !CM_SESSION) return;
+  try{ CM_MYPROF = (await SB.from("profiles").select("*").eq("id", CM_SESSION.user.id).single()).data }catch(e){}
 }
 
 
@@ -7753,8 +7910,9 @@ async function cmNetLoad(){
       sel = CM_FEED === "top" ? sel.order("likes_count", {ascending: false}) : sel.order("created_at", {ascending: false});
       rows = (await sel.limit(40)).data || [];
     }
+    if (CM_FEED !== "mine" && typeof cmDecorateBy === "function") await cmDecorateBy(rows);
     cmNetCache(rows);
-    body.innerHTML = rows.length ? rows.map(cmNetTile).join("")
+    body.innerHTML = rows.length ? rows.map(r => cmNetTile(r)).join("")
       : '<p class="cm-empty">Nothing here yet — be the first to publish one.</p>';
   }catch(e){
     const cached = cmNetCached();
@@ -7779,21 +7937,27 @@ function cmRowThumb(r){
     return '<div class="cm-thumb">' + themeThumbHTML(deriveVars(vars, p.b || r.base), p.b || r.base, null) + '</div>';
   }catch(e){ return "" }
 }
-function cmNetTile(r){
-  const mine = CM_FEED === "mine";
+function cmNetTile(r, opts){
+  opts = (opts && typeof opts === "object") ? opts : {};   // .map() passes the index here — ignore it
+  const mine = opts.mine || (!opts.useOnly && CM_FEED === "mine");
   /* publishers must SEE their status — a pending theme in "mine" looks identical to a live one otherwise */
   const chip = (r.status && (mine || r.status !== "approved"))
     ? '<i class="cm-status s-' + esc(r.status) + '">' + esc(r.status) + '</i>' : "";
   const acts = mine
     ? '<button class="mini-btn primary" data-net-act="use">Use</button>'
       + '<button class="mini-btn warn" data-net-act="remove">Remove</button>'
+    : opts.useOnly
+    ? '<button class="mini-btn primary" data-net-act="use">Use</button>'
     : '<button class="mini-btn" data-net-act="like">♥</button>'
       + '<button class="mini-btn" data-net-act="save">Save</button>'
       + '<button class="mini-btn primary" data-net-act="use">Use</button>'
       + '<button class="mini-btn" data-net-act="report" title="Report this">⚑</button>';
+  /* the creator tag: every public tile names its author, and the name IS the door to their profile */
+  const by = (!mine && r._by && r._by.handle)
+    ? '<button class="cm-by" data-by="' + esc(r._by.id) + '" title="See @' + esc(r._by.handle) + '’s profile">@' + esc(r._by.handle) + '</button>' : "";
   return '<article class="cm-card" data-net="' + esc(r.id) + '">'
     + cmRowThumb(r)
-    + '<div class="cm-meta"><b>' + esc(r.name) + '</b><span>♥ ' + (r.likes_count | 0) + ' · used ' + (r.uses_count | 0) + '</span></div>'
+    + '<div class="cm-meta"><b>' + esc(r.name) + '</b><span>♥ ' + (r.likes_count | 0) + ' · used ' + (r.uses_count | 0) + '</span>' + by + '</div>'
     + '<div class="cm-chips">' + chip + (r.tags || []).map(t => '<i>' + esc(t) + '</i>').join("") + '</div>'
     + '<div class="cm-act">' + acts + '</div></article>';
 }
@@ -7830,11 +7994,18 @@ async function cmNetReport(row){
   const {error} = await SB.from("reports").insert({reporter: CM_SESSION.user.id, item_kind: "theme", item_id: row.id, reason: reason.slice(0, 500)});
   toast(error ? "You've already reported this one" : "Reported — thanks, we'll take a look");
 }
-/* Publishing sends ONLY the theme payload the user picked. Never safeStore, never the track, never tokens. */
+/* Publishing sends ONLY the theme payload the user picked. Never safeStore, never the track, never tokens.
+
+   HARDENED after a friend's uploads "vanished" (they never reached the database at all): every refusal now
+   says exactly WHY and what to do, the 64KB data cap is checked BEFORE the insert with a way out, and a
+   successful publish jumps to the *mine* feed so the publisher SEES their pending row land. */
 async function cmNetPublish(){
   if (!SB || !CM_SESSION){ toast("Sign in with Discord to publish"); return }
   const d = (typeof activeCustom === "function" && activeCustom()) || null;
-  if (!d){ toast("Select one of your own custom themes first"); return }
+  if (!d){
+    toast("Publish shares one of YOUR custom themes — built-ins can't be published (everyone already has them). Make one in the theme builder (New theme → Save), select it, then publish.", 7000);
+    return;
+  }
   const name = String(d.name).slice(0, 40);
   /* republishing the same name would just stack duplicates in the moderation queue */
   const dup = await SB.from("themes").select("id,status").eq("owner", CM_SESSION.user.id).eq("name", name).neq("status", "rejected").limit(1);
@@ -7846,11 +8017,27 @@ async function cmNetPublish(){
   if (t === null){ toast("Publish cancelled."); return }
   const tags = [...new Set(t.split(",").map(x => x.trim().toLowerCase().replace(/[^a-z0-9-]/g, "").slice(0, 12)).filter(Boolean))].slice(0, 6);
   const payload = {n: d.name, b: d.base, p: d.np, s: d.stickers || [], v: d.vars};
+  /* the database caps data at 64KB (0001) — image stickers inline as dataURLs and blow straight past it.
+     Failing BEFORE the insert, with a way out, beats a cryptic constraint error after. */
+  let json = JSON.stringify(payload);
+  if (json.length > 60000){
+    const imgs = (payload.s || []).filter(s => s && s.img).length;
+    if (imgs && confirm("“" + name + "” is ~" + Math.round(json.length / 1024) + "KB — over the community's 64KB cap, mostly from " + imgs + " image sticker" + (imgs > 1 ? "s" : "") + ".\n\nPublish it WITHOUT the image stickers?")){
+      payload.s = (payload.s || []).filter(s => !(s && s.img));
+      json = JSON.stringify(payload);
+    }
+    if (json.length > 60000){
+      toast("Still too big to publish (~" + Math.round(json.length / 1024) + "KB > 64KB). Remove some stickers and try again.", 6000);
+      return;
+    }
+  }
   const {error} = await SB.from("themes").insert({
     owner: CM_SESSION.user.id, name, data: payload,
     base: d.base || "none", tags, status: "pending",
   });
-  toast(error ? ("Couldn't publish: " + error.message) : "Sent for review — it appears once approved ✦", 5000);
+  if (error){ toast("Couldn't publish: " + error.message, 7000); return }
+  toast("Sent for review — it appears for everyone once approved ✦", 5000);
+  CM_FEED = "mine"; cmNetRenderBar(); await cmNetLoad();   // proof it landed: your pending row, right there
 }
 
 /* ---------- community stickers (rides the curated "Sticker packs" tab) ----------
@@ -7893,7 +8080,7 @@ function cmStkTile(r){
   const chip = r.status !== "approved" ? '<i class="cm-status s-' + esc(r.status) + '">' + esc(r.status) + '</i>' : "";
   return '<article class="cm-card cm-stk" data-stk="' + esc(r.id) + '">'
     + '<div class="cm-stk-img"><img src="' + esc(r.image_url) + '" alt="" loading="lazy"></div>'
-    + '<div class="cm-meta"><b>' + esc(r.name) + '</b><span>by ' + esc(by) + '</span></div>'
+    + '<div class="cm-meta"><b>' + esc(r.name) + '</b><button class="cm-by" data-by="' + esc(r.owner) + '" title="See @' + esc(by) + '’s profile">@' + esc(by) + '</button></div>'
     + '<div class="cm-chips">' + chip + '</div>'
     + '<div class="cm-act"><button class="mini-btn primary" data-stk-act="install">Add to tray</button>'
     + (CM_SESSION && r.owner === CM_SESSION.user.id ? '<button class="mini-btn warn" data-stk-act="remove">Remove</button>' : "")
@@ -7947,6 +8134,8 @@ async function cmStkInstall(row){
 }
 
 async function cmStkDispatch(e){
+  const by = e.target.closest(".cm-by");
+  if (by && by.dataset.by){ if (typeof cmProfileOpen === "function") await cmProfileOpen(by.dataset.by); return }
   const pub = e.target.closest("button[data-stk-pub]");
   if (pub){
     const cs = CUSTOM_STICKERS.find(x => x.id === pub.dataset.stkPub); if (!cs) return;
@@ -7972,24 +8161,32 @@ async function cmStkDispatch(e){
 
 function cmNetRenderBar(){
   const net = $("cmNet"); if (!net) return;
-  const who = CM_SESSION ? esc(CM_SESSION.user.user_metadata.full_name || "signed in") : null;
+  /* the signed-in chip is your own profile door: avatar + handle, clickable */
+  const meChip = CM_SESSION
+    ? '<button class="cm-me" id="cmMe" title="Your profile">'
+      + (typeof cmAvatarHTML === "function" ? cmAvatarHTML(CM_MYPROF, "cm-av-bar") : "")
+      + '<span>@' + esc((CM_MYPROF && CM_MYPROF.handle) || CM_SESSION.user.user_metadata.full_name || "you") + '</span></button>'
+    : null;
   net.innerHTML =
     '<div class="cm-bar">'
     + '<div class="seg" id="cmFeeds">'
     + ["new", "top", "trending", "mine", "saved"].concat(CM_MOD ? ["queue"] : []).map(f =>
         '<button data-feed="' + f + '"' + (CM_FEED === f ? ' class="on"' : "") + '>' + f + "</button>").join("")
     + '</div><span class="spacer"></span>'
-    + (who ? '<span class="cm-count">' + who + '</span><button class="mini-btn" id="cmPublish">Publish current</button>'
+    + (meChip ? meChip + '<button class="mini-btn" id="cmPublish">Publish current</button>'
              + '<button class="mini-btn" id="cmSignOut">Sign out</button>'
            : '<button class="mini-btn primary" id="cmSignIn">Sign in with Discord</button>')
     + '</div><div class="cm-grid" id="cmNetBody"></div>';
   const si = $("cmSignIn"); if (si) si.onclick = cmSignIn;
   const so = $("cmSignOut"); if (so) so.onclick = cmSignOut;
   const pub = $("cmPublish"); if (pub) pub.onclick = cmNetPublish;
+  const me = $("cmMe"); if (me) me.onclick = () => { if (CM_SESSION && typeof cmProfileOpen === "function") cmProfileOpen(CM_SESSION.user.id) };
   net.querySelectorAll("#cmFeeds button").forEach(b => b.onclick = () => { CM_FEED = b.dataset.feed; cmNetRenderBar(); cmNetLoad() });
   const body = $("cmNetBody");
   if (body) body.onclick = async e => {
     if (typeof cmModDispatch === "function" && await cmModDispatch(e)) return;   // moderation buttons (community-mod.js)
+    const by = e.target.closest(".cm-by");
+    if (by && by.dataset.by){ if (typeof cmProfileOpen === "function") await cmProfileOpen(by.dataset.by); return }
     const btn = e.target.closest("button[data-net-act]"); if (!btn) return;
     const card = btn.closest("[data-net]"); if (!card) return;
     const row = (cmNetCached().find(r => r.id === card.dataset.net));
@@ -8001,6 +8198,249 @@ function cmNetRenderBar(){
     else if (act === "save") await cmNetSave(row);
     else if (act === "report") await cmNetReport(row);
   };
+}
+
+</script>
+<script>
+/* framesaur · js/community-profile.js — public profile pages inside the Community panel.
+
+   Classic script (shared global scope): loads after community-net.js; everything it references (SB,
+   CM_SESSION, esc, toast, cmNetTile, cmInstallTheme…) resolves at fire time.
+
+   A profile is: avatar + handle + bio, follower/following counts, follow button, then the person's
+   published themes/stickers and the ones they liked ("favorites" the public can see — the private
+   `favorites` table stays private by design; likes were always public, 0002).
+
+   DEGRADES BY DESIGN: before supabase/migrations/0008 runs, `follows` and `profiles.bio` don't exist —
+   those queries fail and their blocks simply don't render; publishing/browsing/avatars-in-tiles all keep
+   working. Never hard-depend on 0008 here. */
+
+let CM_PROF = null;             // uid of the profile being shown; null = browsing
+let CM_PROF_ROWS = {th: [], stk: [], likedTh: [], likedStk: []};
+
+function cmAvatarHTML(p, cls){
+  const url = p && p.avatar_url;
+  if (url) return '<img class="' + cls + '" src="' + esc(url) + '" alt="" loading="lazy">';
+  const letter = ((p && p.handle) || "?").trim().slice(0, 1).toUpperCase() || "?";
+  return '<span class="' + cls + ' cm-av-fallback">' + esc(letter) + '</span>';
+}
+
+/* Attach `_by = {id,handle,avatar_url}` to feed rows in ONE profiles query — deliberately not a
+   PostgREST embed: theme_likes makes the themes↔profiles join ambiguous, and the trending feed is a
+   VIEW, where embeds need per-view FK plumbing. A plain .in() works identically for all of them. */
+async function cmDecorateBy(rows){
+  try{
+    const ids = [...new Set((rows || []).map(r => r.owner).filter(Boolean))];
+    if (!ids.length) return rows;
+    const r = await SB.from("profiles").select("id,handle,avatar_url").in("id", ids);
+    const by = {}; (r.data || []).forEach(p => by[p.id] = p);
+    (rows || []).forEach(row => { if (by[row.owner]) row._by = by[row.owner] });
+  }catch(e){}
+  return rows;
+}
+
+async function cmProfileOpen(uid){
+  if (!SB || !uid) return;
+  CM_PROF = uid;
+  const card = document.querySelector("#communityModal .modal-card");
+  if (card) card.dataset.profileOpen = "1";
+  const el = $("cmProfile"); if (!el) return;
+  el.hidden = false;
+  el.innerHTML = '<p class="cm-empty">Loading profile…</p>';
+
+  const me = CM_SESSION ? CM_SESSION.user.id : null;
+  const [prof, th, stk, likedT, likedS, fwr, fwg, mine] = await Promise.all([
+    SB.from("profiles").select("*").eq("id", uid).single(),
+    SB.from("themes").select("*").eq("owner", uid).order("created_at", {ascending: false}).limit(24),
+    SB.from("stickers").select("*").eq("owner", uid).order("created_at", {ascending: false}).limit(24),
+    SB.from("theme_likes").select("theme_id").eq("user_id", uid).limit(24),
+    SB.from("sticker_likes").select("sticker_id").eq("user_id", uid).limit(24),
+    SB.from("follows").select("*", {count: "exact", head: true}).eq("followee", uid),
+    SB.from("follows").select("*", {count: "exact", head: true}).eq("follower", uid),
+    me && me !== uid ? SB.from("follows").select("followee").eq("follower", me).eq("followee", uid) : Promise.resolve({data: null}),
+  ]);
+  if (CM_PROF !== uid) return;                       // user already clicked through to someone else
+  if (prof.error || !prof.data){ el.innerHTML = '<p class="cm-empty">Couldn’t load that profile.</p>' + cmProfBackBtn(); cmProfBind(el); return }
+
+  const tIds = (likedT.data || []).map(x => x.theme_id);
+  const sIds = (likedS.data || []).map(x => x.sticker_id);
+  const [likedThRows, likedStkRows] = await Promise.all([
+    tIds.length ? SB.from("themes").select("*").in("id", tIds) : Promise.resolve({data: []}),
+    sIds.length ? SB.from("stickers").select("*").in("id", sIds) : Promise.resolve({data: []}),
+  ]);
+  if (CM_PROF !== uid) return;
+  CM_PROF_ROWS = {
+    th: th.data || [], stk: stk.data || [],
+    likedTh: likedThRows.data || [], likedStk: likedStkRows.data || [],
+  };
+  await cmDecorateBy(CM_PROF_ROWS.likedTh);
+  await cmDecorateBy(CM_PROF_ROWS.likedStk);
+
+  /* follows may simply not exist yet (0008 not applied). A HEAD count against a missing table comes back
+     204 with error:null AND count:null (no body to carry the error) — a real empty table counts 0. So
+     null count, not the error field, is the absence signal. */
+  const followsLive = !fwr.error && fwr.count !== null;
+  const isMe = me === uid;
+  const following = !!(mine.data && mine.data.length);
+  const p = prof.data;
+
+  el.innerHTML =
+    cmProfBackBtn()
+    + '<div class="cm-prof-head">'
+    + cmAvatarHTML(p, "cm-av-big")
+    + '<div class="cm-prof-id"><b>@' + esc(p.handle) + '</b>'
+    + (p.bio ? '<p class="cm-prof-bio">' + esc(p.bio) + '</p>' : (isMe ? '<p class="cm-prof-bio cm-prof-dim">No bio yet — say something.</p>' : ""))
+    + (followsLive ? '<span class="cm-prof-counts">'
+        + '<button class="cm-plain" data-prof-list="followers"><b>' + (fwr.count | 0) + '</b> followers</button> · '
+        + '<button class="cm-plain" data-prof-list="following"><b>' + (fwg.count | 0) + '</b> following</button></span>' : "")
+    + '</div><span class="spacer"></span>'
+    + (isMe
+        ? '<button class="mini-btn" data-prof-act="avatar">Change picture</button>'
+          + '<button class="mini-btn" data-prof-act="bio">Edit bio</button>'
+        : (CM_SESSION && followsLive
+            ? '<button class="mini-btn' + (following ? "" : " primary") + '" data-prof-act="follow">' + (following ? "Following ✓" : "Follow") + '</button>'
+            : ""))
+    + '</div>'
+    + '<div class="cm-prof-body" id="cmProfBody">' + cmProfSections(isMe) + '</div>';
+  cmProfBind(el);
+}
+
+function cmProfBackBtn(){
+  return '<div class="cm-bar cm-prof-bar"><button class="mini-btn" data-prof-act="back">← Back to browsing</button></div>';
+}
+
+function cmProfSections(isMe){
+  const R = CM_PROF_ROWS;
+  const sec = (title, inner) => inner ? '<div class="cm-prof-sec">' + title + '</div><div class="cm-grid">' + inner + '</div>' : "";
+  /* RLS already scopes what each viewer may see: others get approved rows only, you also see your own
+     pending/rejected (with status chips — cmNetTile shows them for anything not approved). */
+  return (
+    sec("Themes", R.th.map(r => cmNetTile(r, {useOnly: !isMe, mine: isMe})).join(""))
+    + sec("Stickers", R.stk.map(cmProfStkTile).join(""))
+    + sec("Favorite themes", R.likedTh.map(r => cmNetTile(r, {useOnly: true})).join(""))
+    + sec("Favorite stickers", R.likedStk.map(cmProfStkTile).join(""))
+    + (R.th.length || R.stk.length || R.likedTh.length || R.likedStk.length
+        ? "" : '<p class="cm-empty">Nothing published or liked yet.</p>')
+  );
+}
+function cmProfStkTile(r){
+  return '<article class="cm-card cm-stk" data-prof-stk="' + esc(r.id) + '">'
+    + '<div class="cm-stk-img"><img src="' + esc(r.image_url) + '" alt="" loading="lazy"></div>'
+    + '<div class="cm-meta"><b>' + esc(r.name) + '</b><span>♥ ' + (r.likes_count | 0) + '</span></div>'
+    + (r.status && r.status !== "approved" ? '<div class="cm-chips"><i class="cm-status s-' + esc(r.status) + '">' + esc(r.status) + '</i></div>' : "")
+    + '<div class="cm-act"><button class="mini-btn primary" data-prof-stk-act="install">Add to tray</button></div></article>';
+}
+
+function cmProfileClose(){
+  CM_PROF = null;
+  const card = document.querySelector("#communityModal .modal-card");
+  if (card) delete card.dataset.profileOpen;
+  const el = $("cmProfile"); if (el){ el.hidden = true; el.innerHTML = "" }
+}
+
+function cmProfBind(el){
+  el.onclick = async e => {
+    const act = e.target.closest("[data-prof-act]");
+    if (act){
+      const a = act.dataset.profAct;
+      if (a === "back") cmProfileClose();
+      else if (a === "follow") await cmFollowToggle(CM_PROF, act);
+      else if (a === "avatar") cmAvatarPick();
+      else if (a === "bio") await cmBioEdit();
+      return;
+    }
+    const list = e.target.closest("[data-prof-list]");
+    if (list){ await cmProfPeople(CM_PROF, list.dataset.profList); return }
+    const sbtn = e.target.closest("button[data-prof-stk-act]");
+    if (sbtn){
+      const id = sbtn.closest("[data-prof-stk]").dataset.profStk;
+      const row = CM_PROF_ROWS.stk.concat(CM_PROF_ROWS.likedStk).find(r => r.id === id);
+      if (row) await cmStkInstall(row);
+      return;
+    }
+    const nbtn = e.target.closest("button[data-net-act]");
+    if (nbtn){
+      const card = nbtn.closest("[data-net]"); if (!card) return;
+      const row = CM_PROF_ROWS.th.concat(CM_PROF_ROWS.likedTh).find(r => r.id === card.dataset.net);
+      if (!row) return;
+      if (nbtn.dataset.netAct === "use") await cmNetUse(row);
+      else if (nbtn.dataset.netAct === "remove"){ await cmNetRemove(row); await cmProfileOpen(CM_PROF) }
+      return;
+    }
+    const by = e.target.closest(".cm-by");
+    if (by && by.dataset.by && by.dataset.by !== CM_PROF) await cmProfileOpen(by.dataset.by);
+  };
+}
+
+/* follower / following list — swaps the body; Back re-opens the same profile fresh */
+async function cmProfPeople(uid, kind){
+  const body = $("cmProfBody"); if (!body) return;
+  body.innerHTML = '<p class="cm-empty">Loading…</p>';
+  const q = kind === "followers"
+    ? SB.from("follows").select("follower").eq("followee", uid)
+    : SB.from("follows").select("followee").eq("follower", uid);
+  const r = await q.limit(100);
+  const ids = (r.data || []).map(x => x.follower || x.followee);
+  const profs = ids.length ? await SB.from("profiles").select("id,handle,avatar_url").in("id", ids) : {data: []};
+  body.innerHTML = '<div class="cm-prof-sec">' + (kind === "followers" ? "Followers" : "Following") + '</div>'
+    + ((profs.data || []).length
+        ? '<div class="cm-people">' + profs.data.map(p =>
+            '<button class="cm-person cm-by" data-by="' + esc(p.id) + '">' + cmAvatarHTML(p, "cm-av-mini") + '<span>@' + esc(p.handle) + '</span></button>').join("") + '</div>'
+        : '<p class="cm-empty">Nobody yet.</p>');
+}
+
+async function cmFollowToggle(uid, btn){
+  if (!CM_SESSION){ toast("Sign in with Discord to follow people"); return }
+  const me = CM_SESSION.user.id;
+  const ins = await SB.from("follows").insert({follower: me, followee: uid});
+  if (ins.error){                                                                        // already following → toggle off
+    const del = await SB.from("follows").delete().eq("follower", me).eq("followee", uid);
+    if (del.error){ toast("Couldn't update the follow: " + ins.error.message, 5000); return }
+  }
+  await cmProfileOpen(uid);                                                              // counts + button re-render
+}
+
+/* ---------- own profile editing ---------- */
+function cmAvatarPick(){
+  const inp = document.createElement("input");
+  inp.type = "file"; inp.accept = "image/png,image/jpeg,image/webp";
+  inp.onchange = () => { if (inp.files && inp.files[0]) cmAvatarUpload(inp.files[0]) };
+  inp.click();
+}
+async function cmAvatarUpload(file){
+  if (!SB || !CM_SESSION) return;
+  try{
+    /* canvas re-encode is the sanitiser (and the downscale): whatever came in leaves as a plain 128px PNG */
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    await new Promise((res, rej) => { img.onload = res; img.onerror = rej; img.src = url });
+    URL.revokeObjectURL(url);
+    const cv = document.createElement("canvas"); cv.width = cv.height = 128;
+    const g = cv.getContext("2d");
+    const s = Math.min(img.width, img.height);                                            // centre-crop to square
+    g.drawImage(img, (img.width - s) / 2, (img.height - s) / 2, s, s, 0, 0, 128, 128);
+    const blob = await new Promise(res => cv.toBlob(res, "image/png"));
+    if (!blob || blob.size > 131072){ toast("That image doesn't compress under the 128KB avatar cap — try a simpler one"); return }
+    const path = CM_SESSION.user.id + "/avatar.png";
+    const up = await SB.storage.from("avatars").upload(path, blob, {contentType: "image/png", upsert: true});
+    if (up.error){ toast("Upload failed: " + up.error.message + (up.error.message.includes("not found") ? " — the avatars bucket needs migration 0008" : ""), 6000); return }
+    /* same path every time (nothing orphans) + a cache-buster, because the CDN edge keeps serving the old bytes */
+    const pub = SB.storage.from("avatars").getPublicUrl(path).data.publicUrl + "?v=" + Date.now();
+    const upd = await SB.from("profiles").update({avatar_url: pub}).eq("id", CM_SESSION.user.id);
+    if (upd.error){ toast("Couldn't save the avatar: " + upd.error.message, 5000); return }
+    toast("Looking sharp ✦");
+    await cmProfileOpen(CM_SESSION.user.id);
+    cmNetRenderBar();                                                                     // the bar chip shows it too
+  }catch(e){ toast("Couldn't read that image", 4000) }
+}
+async function cmBioEdit(){
+  if (!SB || !CM_SESSION) return;
+  const cur = await SB.from("profiles").select("bio").eq("id", CM_SESSION.user.id).single();
+  const bio = prompt("Your bio (200 characters max):", (cur.data && cur.data.bio) || "");
+  if (bio === null) return;
+  const {error} = await SB.from("profiles").update({bio: bio.trim().slice(0, 200) || null}).eq("id", CM_SESSION.user.id);
+  toast(error ? ("Couldn't save: " + error.message + (String(error.message).includes("bio") ? " — bio needs migration 0008" : "")) : "Bio updated");
+  if (!error) await cmProfileOpen(CM_SESSION.user.id);
 }
 
 </script>
@@ -8712,6 +9152,10 @@ if(EL && IS_WIDGET){
   if(GLASS) document.body.classList.add("widget-glass");
   const wrap=document.createElement("div"); wrap.className="pip-scale";
   frame.parentNode.insertBefore(wrap,frame); wrap.appendChild(frame);
+  /* the widget must never LIE: without this, a dead connection keeps confidently rendering the demo
+     track over someone's game with no tell. uri is the honest signal — live tracks always carry one. */
+  const demoChip=document.createElement("div"); demoChip.className="demo-chip"; demoChip.textContent="demo";
+  wrap.appendChild(demoChip);
   const bar=document.createElement("div"); bar.className="pip-bar";
   let pinned=true;
   const mk=(t,fn,title)=>{const b=document.createElement("button");b.className="pip-btn";b.textContent=t;if(title)b.title=title;b.addEventListener("click",fn);bar.appendChild(b);return b};
@@ -8838,6 +9282,7 @@ if(EL && IS_WIDGET){
     if(typeof s.stripHover==="boolean"){ STRIP_HOVER=s.stripHover; if(!STRIP_HOVER) collapseStrip() }
     if(window.HOVER_LAYOUT&&state.layout!=="strip") collapseStrip(); // studio left strip mode
     if(typeof s.peekFx==="string") PEEKFX=s.peekFx;
+    demoChip.hidden=!!(state.track&&state.track.uri);
     if(s.sp){ if(typeof s.sp.volume==="number"&&!volDrag) vol.value=s.sp.volume; vol.disabled=s.sp.supportsVol===false; }
     setTimeout(fit,60); setTimeout(fit,320);
   });
@@ -8974,6 +9419,13 @@ if(!IS_WIDGET){
   if(typeof profilesInit==="function") profilesInit();
   if(typeof tbMotionInit==="function") tbMotionInit();
   if(typeof tbRxInit==="function") tbRxInit();
+/* one-time post-update nudge; a first run just records the version */
+if(EL&&EL.updateStatus&&!IS_WIDGET) EL.updateStatus().then(st=>{ if(!st||!st.appVersion) return;
+  const seen=safeStore.get("fs_seen_version");
+  if(seen&&seen!==st.appVersion) toast("Updated to "+st.appVersion+" — see ⚙ → Updates for what's new",6000);
+  safeStore.set("fs_seen_version",st.appVersion);
+  /* portable/dev builds: the auto-updater is off, so this probe is their only new-release alert */
+  if(st.status==="disabled"&&typeof updLatestProbe==="function") updLatestProbe(st.appVersion); }).catch(()=>{});
   if(typeof homeInit==="function") homeInit(); // Home view + the on-device listening log (js/statsdb.js)
 }
 if(EL && !IS_WIDGET){
