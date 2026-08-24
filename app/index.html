@@ -1612,9 +1612,10 @@ body[data-studio="blackcat"] .home[data-deco="on"] .hm::after{
         <div class="pf-head">You</div>
         <div class="pf-list" id="profileList"></div>
         <div class="pf-acts">
+          <button class="mini-btn primary" id="pf-page">✦ Your creator page</button>
           <button class="mini-btn" id="pf-rename">Rename</button>
         </div>
-        <div class="hint">This name is local to this PC. Your community identity — picture, banner, followers — lives on your creator page: ✦ Community, then the @you chip.</div>
+        <div class="hint">This name is local to this PC. Your community identity — picture, banner, followers — is your creator page (also reachable via the @you chip in ✦ Community).</div>
       </div>
     </div>
     <button class="btn btn-icon" id="btn-shortcuts" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">?</button>
@@ -3245,6 +3246,10 @@ function profilesInit(){
   /* 1.9.3: New/Delete/Export/Import retired — one profile per install; identity lives on the community
      creator page. The roster/switch/namespace machinery stays (legacy multi-profile installs keep
      switching via the list above), and history export moved to Home → Export history. */
+  $("pf-page").addEventListener("click", () => {
+    profileMenuOpen(false);
+    if (typeof cmOpenOwnPage === "function") cmOpenOwnPage();   // community-net.js, resolved at fire time
+  });
   $("pf-rename").addEventListener("click", async () => {
     const p = activeProfile();
     const name = await fsPrompt("Rename this profile", p.name); if (!name) return;
@@ -7890,6 +7895,17 @@ async function cmSignOut(){
   if (typeof cmProfileClose === "function") cmProfileClose();
   cmNetRenderBar(); await cmNetLoad();
 }
+/* The topbar chip's "✦ Your creator page" lands here: open the Community panel, wait for the network
+   half to finish resolving the session (openCommunity fires cmNetOpen; polling the rendered bar avoids
+   a second concurrent init), then jump to your page — or point at the sign-in button honestly. */
+async function cmOpenOwnPage(){
+  if (typeof openCommunity === "function") openCommunity();
+  if (!cmNetConfigured()){ toast("The community isn't configured in this build."); return }
+  for (let i = 0; i < 60 && !$("cmMe") && !$("cmSignIn"); i++) await new Promise(r => setTimeout(r, 100));
+  if (CM_SESSION && typeof cmProfileOpen === "function") await cmProfileOpen(CM_SESSION.user.id);
+  else toast("Sign in with Discord first — the button is in the panel that just opened.", 5000);
+}
+
 /* One-time adoption of the pre-1.9.2 session: supabase-js used to write sb-<ref>-auth-token into RAW
    localStorage. Move it into the ACTIVE profile's namespace so nobody gets signed out by the storage
    change. The raw read/delete is a deliberate, migration-only exception to the "only profiles.js touches
