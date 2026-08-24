@@ -2223,6 +2223,8 @@ body[data-studio="blackcat"] .home[data-deco="on"] .hm::after{
             <label class="switch"><input type="checkbox" id="set-striphover" checked><span class="knob"></span></label></div>
           <div class="tog" id="set-snap-row"><span>Snap widget to screen edges</span>
             <label class="switch"><input type="checkbox" id="set-snap" checked><span class="knob"></span></label></div>
+          <div class="tog" id="set-pin-row"><span>Widget starts pinned (always on top)</span>
+            <label class="switch"><input type="checkbox" id="set-pin" checked><span class="knob"></span></label></div>
           <div class="tog" id="set-idle-row"><span>Hide widget after <span id="set-idle-val">5</span> min paused</span>
             <label class="switch"><input type="checkbox" id="set-idle"><span class="knob"></span></label></div>
           <div class="field" id="set-idle-min-row" style="margin-top:2px"><input type="range" id="set-idle-min" aria-label="Minutes paused before hiding the widget" min="1" max="30" step="1" value="5" title="Minutes paused before hiding"></div>
@@ -3000,6 +3002,41 @@ function themeDef(){
     shape:(r!=null||a!=null||s!=null)?{radius:(r==null?26:r),angle:(a==null?160:a),shadow:(s==null?55:s)}:null};
 }
 
+/* ---------- fsPrompt: window.prompt(), except it works ----------
+   Electron does NOT implement window.prompt() — every call THROWS "prompt() is not supported", which
+   silently killed profile creation, publishing (the tags step), sticker naming, report reasons and
+   rejection reasons in the packaged app while browser mode hid the whole class of bug (framesaur.log
+   was full of it). alert()/confirm() ARE implemented, so only prompt needed replacing. Drop-in async
+   shape: resolves the string on OK/Enter, null on Cancel/Esc/backdrop — same contract callers already
+   check. Esc stops propagation so the global Esc (js/history.js) doesn't also close the dialog UNDER it. */
+function fsPrompt(msg, def){
+  return new Promise(res=>{
+    const prev=document.activeElement;
+    const m=document.createElement("div");
+    m.className="modal"; m.setAttribute("role","dialog"); m.setAttribute("aria-modal","true"); m.setAttribute("aria-label",msg);
+    m.innerHTML='<div class="modal-card" style="width:min(440px,92vw)">'
+      +'<div class="modal-head"><span></span><button class="mini-btn" data-x aria-label="Cancel">✕</button></div>'
+      +'<div class="field"><label></label><input class="tb-input" type="text"></div>'
+      +'<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px">'
+      +'<button class="mini-btn" data-x>Cancel</button><button class="mini-btn primary" data-ok>OK</button></div></div>';
+    m.querySelector(".modal-head span").textContent="FrameSaur";
+    m.querySelector("label").textContent=msg;
+    const inp=m.querySelector("input");
+    inp.value=def==null?"":String(def);
+    const done=v=>{ m.remove(); if(prev&&document.contains(prev)){ try{prev.focus()}catch(e){} } res(v) };
+    m.addEventListener("click",e=>{
+      if(e.target.closest("[data-ok]")) done(inp.value);
+      else if(e.target===m||e.target.closest("[data-x]")) done(null);
+    });
+    inp.addEventListener("keydown",e=>{
+      if(e.key==="Enter"){ e.preventDefault(); done(inp.value) }
+      else if(e.key==="Escape"){ e.stopPropagation(); done(null) }
+    });
+    document.body.appendChild(m);
+    inp.focus(); inp.select();
+  });
+}
+
 </script>
 <script>
 /* framesaur · js/profiles.js — local profiles: one isolated storage namespace per person.
@@ -3203,15 +3240,15 @@ function profilesInit(){
     const b = e.target.closest("button[data-pf]"); if (!b) return;
     profileSwitch(b.dataset.pf);
   });
-  $("pf-new").addEventListener("click", () => {
-    const name = prompt("Name this profile"); if (!name) return;
+  $("pf-new").addEventListener("click", async () => {
+    const name = await fsPrompt("Name this profile"); if (!name) return;
     const id = profileCreate(name);
     toast("Created “" + name + "” — switching…");
     profileSwitch(id);
   });
-  $("pf-rename").addEventListener("click", () => {
+  $("pf-rename").addEventListener("click", async () => {
     const p = activeProfile();
-    const name = prompt("Rename this profile", p.name); if (!name) return;
+    const name = await fsPrompt("Rename this profile", p.name); if (!name) return;
     profileRename(p.id, name); profilePaintChip(); profileRenderMenu(); toast("Renamed");
   });
   $("pf-delete").addEventListener("click", async () => {
@@ -5111,6 +5148,8 @@ $("set-login").addEventListener("change",async e=>{
   toast(r.error?("Couldn't update startup: "+r.error):(r.enabled?"FrameSaur will start with Windows":"Startup entry removed"),3600);
 });
 if(EL&&EL.onGhost) EL.onGhost(on=>{ const c=$("set-ghost"); if(c) c.checked=on });
+/* the log used to scream into a file nobody read — first packaged-build error now says so out loud, once */
+if(EL&&EL.onErrPulse&&!IS_WIDGET) EL.onErrPulse(()=>toast("Something misfired under the hood — ⚙ → Help → Copy diagnostics has the details.",7000));
 
 /* widget behaviour prefs (snap-to-edge, idle auto-hide) — main owns the behaviour, renderer owns persistence */
 function widgetPrefsPayload(){
@@ -5123,11 +5162,13 @@ function applyWidgetPrefs(){
   $("set-idle-min-row").style.display=p.idle.enabled?"":"none";
   $("set-tb-progress").checked=p.taskbar.progress; $("set-tb-buttons").checked=p.taskbar.buttons;
   $("set-striphover").checked=safeStore.get("fs_strip_hover")!=="0";
+  $("set-pin").checked=safeStore.get("fs_widget_pin")!=="0";
   if(EL&&EL.widgetPrefs) EL.widgetPrefs(p).catch(()=>{});
 }
 $("set-tb-progress").addEventListener("change",e=>{ safeStore.set("fs_tb_progress",e.target.checked?"1":"0"); applyWidgetPrefs() });
 $("set-tb-buttons").addEventListener("change",e=>{ safeStore.set("fs_tb_buttons",e.target.checked?"1":"0"); applyWidgetPrefs() });
 $("set-snap").addEventListener("change",e=>{ safeStore.set("fs_snap",e.target.checked?"1":"0"); applyWidgetPrefs() });
+$("set-pin").addEventListener("change",e=>{ safeStore.set("fs_widget_pin",e.target.checked?"1":"0") }); // read by the widget at ITS next open — the hover bar's 📌 owns the live state
 $("set-striphover").addEventListener("change",e=>{ safeStore.set("fs_strip_hover",e.target.checked?"1":"0") }); // rides the snapshot
 $("set-idle").addEventListener("change",e=>{ safeStore.set("fs_idle",e.target.checked?"1":"0"); applyWidgetPrefs() });
 $("set-idle-min").addEventListener("input",e=>{ safeStore.set("fs_idle_min",e.target.value); applyWidgetPrefs() });
@@ -5154,7 +5195,7 @@ async function updNotes(ver){
 /* settings backup / restore — a whitelist of safeStore keys; sign-in tokens, the OAuth verifier/state and the
    Discord webhook are never exported, and never imported even if a file contains them */
 const BACKUP_KEYS=["fs_client_id","fs_custom_themes","fs_custom_stickers","fs_theme_stickers","fs_last","fs_studio_appearance","fs_studio_light","fs_studio_darkpal",
-  "fs_widget_peek","fs_peek_fx","fs_peek_secs","fs_widget_hotkey","fs_ghost_hotkey","fs_np","fs_overlay","fs_snap","fs_strip_hover","fs_idle","fs_idle_min","fs_tb_progress","fs_tb_buttons",
+  "fs_widget_peek","fs_peek_fx","fs_peek_secs","fs_widget_hotkey","fs_ghost_hotkey","fs_np","fs_overlay","fs_snap","fs_strip_hover","fs_widget_pin","fs_idle","fs_idle_min","fs_tb_progress","fs_tb_buttons",
   "fs_live","fs_setlist","fs_discord_on","fs_autosave","fs_widget_scale","fs_audio_on","fs_audio_fx","fs_audio_bop","fs_audio_src","fs_audio_screencap",
   // Home view PREFERENCES only — the listening log itself lives in IndexedDB and deliberately stays out of
   // the backup file, so exporting a backup can never hand someone your listening history.
@@ -5616,6 +5657,7 @@ async function spDisconnect(){
 }
 
 async function spSyncNow(quiet){
+  SP.lastSyncAt=Date.now();   // watchdog heartbeat — see below spSchedule
   try{
     let r=null;
     /* the latch HEALS: dev-mode's allow-list is enforced per REQUEST, so being added to User Management
@@ -6025,11 +6067,25 @@ function spSchedule(){
   }
   SP.pollT=setTimeout(()=>spSyncNow(true),wait);
 }
+/* Live-sync watchdog. The poll chain is one long self-re-arming setTimeout: every completed spSyncNow
+   schedules the next in its finally. That is robust against anything thrown INSIDE the sync — but a field
+   report ("the song doesn't switch unless I open the studio") says the chain can still die in the wild,
+   and a chain with no heartbeat dies silently. So: if we're live and no sync has STARTED for 30s (the
+   slowest legitimate cadence is 5s), revive the chain and console.warn — warnings are forwarded to
+   userData/framesaur.log, so the next diagnostics dump will say exactly how often this fired. */
+if(!IS_WIDGET) setInterval(()=>{
+  if(SP.live && SP.lastSyncAt && Date.now()-SP.lastSyncAt>30000){
+    console.warn("[framesaur] live-sync watchdog: no sync for "+Math.round((Date.now()-SP.lastSyncAt)/1000)+"s — reviving the poll chain");
+    SP.lastSyncAt=Date.now();
+    spSyncNow(true);
+  }
+},15000);
 function spSetLive(on){
   SP.live = !!on && !!SP.tokens;
   document.body.classList.toggle("sp-live",SP.live); // gates #trackSec's hand-editing fields
   clearTimeout(SP.pollT); clearInterval(SP.tickT); SP.pollT=SP.tickT=null;
   if(SP.live){
+    SP.lastSyncAt=Date.now();   // arm the watchdog from "now", not from a stale stamp
     spSchedule();
     SP.tickT=setInterval(()=>{
       if(SEEKDRAG) return; // don't fight the user's seek drag
@@ -7828,12 +7884,23 @@ async function cmNetOpen(){
     if (!SB){
       const sdk = await cmLoadSdk();
       if (!sdk) throw new Error("sdk unavailable");
+      cmAdoptLegacySession();
       SB = sdk.createClient(COMMUNITY_CONFIG.url, COMMUNITY_CONFIG.anonKey, {
         auth: {persistSession: true, autoRefreshToken: true, detectSessionInUrl: !EL,
           /* pkce is LOAD-BEARING for the Electron path: the loopback catcher is an HTTP server, and the
              implicit flow (the SDK default) returns tokens in the URL FRAGMENT, which never leaves the
              browser — the first live sign-in came back {code:null} until this was set. */
-          flowType: "pkce"},
+          flowType: "pkce",
+          /* PER-PROFILE session. supabase-js's default storage writes sb-<ref>-auth-token straight into
+             localStorage — outside safeStore's profile namespace, so every local profile shared ONE
+             community identity (sign in as you, switch to your brother's profile, still you). Routing
+             it through safeStore gives each profile its own session; "" means absent because safeStore
+             has no tri-state. */
+          storage: {
+            getItem:    k => safeStore.get("sb_" + k) || null,
+            setItem:    (k, v) => safeStore.set("sb_" + k, v),
+            removeItem: k => safeStore.del("sb_" + k),
+          }},
       });
       const {data} = await SB.auth.getSession();
       CM_SESSION = data && data.session;
@@ -7881,6 +7948,21 @@ async function cmSignOut(){
   if (CM_FEED === "queue") CM_FEED = "new";
   if (typeof cmProfileClose === "function") cmProfileClose();
   cmNetRenderBar(); await cmNetLoad();
+}
+/* One-time adoption of the pre-1.9.2 session: supabase-js used to write sb-<ref>-auth-token into RAW
+   localStorage. Move it into the ACTIVE profile's namespace so nobody gets signed out by the storage
+   change. The raw read/delete is a deliberate, migration-only exception to the "only profiles.js touches
+   localStorage" rule — it exists precisely to bring a stray key INTO the namespace, same spirit as
+   profileMigrate's sweep. Runs before the client is created, so the adapter finds the adopted copy. */
+function cmAdoptLegacySession(){
+  try{
+    const ref = (COMMUNITY_CONFIG.url.match(/^https:\/\/([a-z0-9]+)\./) || [])[1];
+    if (!ref) return;
+    const key = "sb-" + ref + "-auth-token";
+    const raw = localStorage.getItem(key);
+    if (raw && !safeStore.get("sb_" + key)){ safeStore.set("sb_" + key, raw); localStorage.removeItem(key) }
+    else if (raw) localStorage.removeItem(key);   // namespaced copy already exists — the raw one is stale
+  }catch(e){}
 }
 async function cmMyProfLoad(){
   CM_MYPROF = null;
@@ -8032,7 +8114,7 @@ async function cmNetSave(row){
 }
 async function cmNetReport(row){
   if (!CM_SESSION){ toast("Sign in with Discord to report"); return }
-  const reason = prompt("What's wrong with “" + row.name + "”?");
+  const reason = await fsPrompt("What's wrong with “" + row.name + "”?");
   if (!reason) return;
   const {error} = await SB.from("reports").insert({reporter: CM_SESSION.user.id, item_kind: "theme", item_id: row.id, reason: reason.slice(0, 500)});
   toast(error ? "You've already reported this one" : "Reported — thanks, we'll take a look");
@@ -8056,7 +8138,7 @@ async function cmNetPublish(){
     toast("You already published “" + name + "” (" + dup.data[0].status + ") — remove it under *mine* first, or rename the theme.", 5000);
     return;
   }
-  const t = prompt("Tags? Comma-separated, up to 6 — they help people find it (optional)", "");
+  const t = await fsPrompt("Tags? Comma-separated, up to 6 — they help people find it (optional)", "");
   if (t === null){ toast("Publish cancelled."); return }
   const tags = [...new Set(t.split(",").map(x => x.trim().toLowerCase().replace(/[^a-z0-9-]/g, "").slice(0, 12)).filter(Boolean))].slice(0, 6);
   const payload = {n: d.name, b: d.base, p: d.np, s: d.stickers || [], v: d.vars};
@@ -8185,7 +8267,7 @@ async function cmStkDispatch(e){
   const pub = e.target.closest("button[data-stk-pub]");
   if (pub){
     const cs = CUSTOM_STICKERS.find(x => x.id === pub.dataset.stkPub); if (!cs) return;
-    const name = prompt("Name this sticker", "My sticker"); if (name === null) return;
+    const name = await fsPrompt("Name this sticker", "My sticker"); if (name === null) return;
     $("cmStkPick").hidden = true;
     if (await cmStkPublishSrc(cs.src, name || "My sticker")){ CM_STK_LOADED = false; cmStkSync() }
     return;
@@ -8496,7 +8578,7 @@ async function cmAvatarUpload(file){
    with no report path (themes and stickers had one from day one) */
 async function cmProfileReport(uid){
   if (!CM_SESSION){ toast("Sign in with Discord to report"); return }
-  const reason = prompt("What's wrong with this creator page?");
+  const reason = await fsPrompt("What's wrong with this creator page?");
   if (!reason) return;
   const {error} = await SB.from("reports").insert({reporter: CM_SESSION.user.id, item_kind: "profile", item_id: uid, reason: reason.slice(0, 500)});
   toast(error ? "You've already reported this page" : "Reported — a moderator will take a look");
@@ -8504,7 +8586,7 @@ async function cmProfileReport(uid){
 async function cmBioEdit(){
   if (!SB || !CM_SESSION) return;
   const cur = await SB.from("profiles").select("bio").eq("id", CM_SESSION.user.id).single();
-  const bio = prompt("Your bio (200 characters max):", (cur.data && cur.data.bio) || "");
+  const bio = await fsPrompt("Your bio (200 characters max):", (cur.data && cur.data.bio) || "");
   if (bio === null) return;
   const {error} = await SB.from("profiles").update({bio: bio.trim().slice(0, 200) || null}).eq("id", CM_SESSION.user.id);
   toast(error ? ("Couldn't save: " + error.message + (String(error.message).includes("bio") ? " — bio needs migration 0008" : "")) : "Bio updated");
@@ -8590,7 +8672,7 @@ async function cmModerate(row, status, table){
   const patch = {status};
   if (status === "rejected"){
     /* the reason reaches the publisher under *mine* — a bare "rejected" chip taught nobody anything */
-    const why = prompt("Why is “" + row.name + "” rejected? (shown to the publisher, optional)", "");
+    const why = await fsPrompt("Why is “" + row.name + "” rejected? (shown to the publisher, optional)", "");
     if (why === null) return;                                   // moderator changed their mind
     patch.reject_reason = why.trim().slice(0, 300) || null;
   } else patch.reject_reason = null;                            // (re-)approval clears any stale reason
@@ -9253,7 +9335,12 @@ if(EL && IS_WIDGET){
   const demoChip=document.createElement("div"); demoChip.className="demo-chip"; demoChip.textContent="demo";
   wrap.appendChild(demoChip);
   const bar=document.createElement("div"); bar.className="pip-bar";
-  let pinned=true;
+  /* the default pin state is a setting (⚙ → Widget): pinned = always-on-top; unpinned floats normally
+     and song-change peeks temporarily raise it. The widget reads it itself (same profile-namespaced
+     storage as the studio) and TELLS main at boot — one writer, and main's session default stays true.
+     Peek windows never report: they are transient and must not clobber the real widget's pin state. */
+  let pinned=safeStore.get("fs_widget_pin")!=="0";
+  if(EL&&EL.setPin&&!/[?&]peekin=1/.test(location.search)) EL.setPin(pinned);
   const mk=(t,fn,title)=>{const b=document.createElement("button");b.className="pip-btn";b.textContent=t;if(title)b.title=title;b.addEventListener("click",fn);bar.appendChild(b);return b};
   /* glass mode: the window can't be natively resized (transparent on Windows),
      so the window follows the card instead — WPAD px of gutter for the shadow,
@@ -9300,7 +9387,7 @@ if(EL && IS_WIDGET){
   vol.addEventListener("pointerup",()=>{volDrag=false});
   vol.addEventListener("input",()=>{clearTimeout(volT);volT=setTimeout(()=>{if(EL.control)EL.control("vol:"+vol.value)},250)});
   bar.appendChild(vol);
-  const pinBtn=mk("📌 Pinned",()=>{pinned=!pinned;EL.setPin(pinned);pinBtn.textContent=pinned?"📌 Pinned":"📌 Pin"});
+  const pinBtn=mk(pinned?"📌 Pinned":"📌 Pin",()=>{pinned=!pinned;EL.setPin(pinned);pinBtn.textContent=pinned?"📌 Pinned":"📌 Pin"});
   mk("⌂ Studio",()=>EL.focusStudio());
   mk("✕",()=>EL.closeWidget());
   document.querySelector(".stage").appendChild(bar);
@@ -9378,7 +9465,10 @@ if(EL && IS_WIDGET){
     if(typeof s.stripHover==="boolean"){ STRIP_HOVER=s.stripHover; if(!STRIP_HOVER) collapseStrip() }
     if(window.HOVER_LAYOUT&&state.layout!=="strip") collapseStrip(); // studio left strip mode
     if(typeof s.peekFx==="string") PEEKFX=s.peekFx;
-    demoChip.hidden=!!(state.track&&state.track.uri);
+    /* the uri rides the snapshot TOP-LEVEL (SP.uri) — the studio's state.track never carries one, so
+       checking state.track.uri kept the chip visible over real live tracks for every user since 1.9.0.
+       applyMirrorSnapshot (above) has already stored it in MIRROR_URI by the time this line runs. */
+    demoChip.hidden=!!MIRROR_URI;
     if(s.sp){ if(typeof s.sp.volume==="number"&&!volDrag) vol.value=s.sp.volume; vol.disabled=s.sp.supportsVol===false; }
     setTimeout(fit,60); setTimeout(fit,320);
   });
@@ -9445,6 +9535,18 @@ if(!EL && IS_OVERLAY){
     const sc=parseFloat(q.get("scale")); if(isFinite(sc)&&sc>=.3&&sc<=3) wrap.style.setProperty("--pipScale",sc.toFixed(3));
     if(Object.keys(o).length) MIRROR_OVERRIDE=o;
   })();
+  /* the overlay's demo tell: a streamer whose connection died would otherwise BROADCAST the demo card
+     with no indicator. Debounced 8s so a between-tracks blip never flashes a watermark on stream —
+     it appears only when the card has genuinely been showing demo content for a while. */
+  const ovChip=document.createElement("div"); ovChip.className="demo-chip"; ovChip.textContent="demo"; ovChip.hidden=true;
+  wrap.appendChild(ovChip);
+  /* interval-driven, not per-message: it self-corrects even when no snapshot arrives (a source that
+     never connects counts as demo too), and MIRROR_URI is the single source of truth either way */
+  let ovDemoSince=Date.now();
+  setInterval(()=>{
+    if(MIRROR_URI){ ovDemoSince=0; ovChip.hidden=true }
+    else { if(!ovDemoSince) ovDemoSince=Date.now(); ovChip.hidden=(Date.now()-ovDemoSince)<8000 }
+  },1000);
   const connectSSE=()=>{
     let es;
     try{ es=new EventSource("/events") }catch(e){ return }
