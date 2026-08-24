@@ -1164,7 +1164,14 @@ body .mini-btn.primary:hover{background:var(--leaf-hover,var(--leaf-dark))}
   color:var(--leaf-dark,var(--leaf));font-weight:900}
 .cm-av-fallback.cm-av-big{font-size:28px}
 .cm-prof-bar{margin-bottom:2px}
-.cm-prof-head{display:flex;align-items:center;gap:14px;padding:10px 2px 14px}
+/* banner: cover image with a quiet gradient fallback; the head row overlaps its bottom edge (classic
+   profile look) via the negative margin, so the avatar needs the panel-colored ring to pop */
+.cm-prof-banner{height:120px;border-radius:14px;background:linear-gradient(135deg,var(--leaf-tint),var(--panel-2,var(--panel)));
+  background-size:cover;background-position:center;position:relative;margin:2px 0 -24px}
+.cm-banner-btn{position:absolute;right:10px;bottom:10px}
+.cm-prof-stats{font-size:11.5px;color:var(--ink-soft);font-weight:800}
+.cm-prof-head{display:flex;align-items:center;gap:14px;padding:10px 2px 14px;position:relative;z-index:1}
+.cm-prof-head .cm-av-big{border:3px solid var(--panel);box-shadow:0 4px 14px rgba(0,0,0,.18)}
 .cm-prof-id{display:flex;flex-direction:column;gap:3px;min-width:0}
 .cm-prof-id > b{font-size:16px}
 .cm-prof-bio{margin:0;font-size:12px;color:var(--ink-soft);max-width:420px;overflow-wrap:break-word}
@@ -1595,26 +1602,19 @@ body[data-studio="blackcat"] .home[data-deco="on"] .hm::after{
         <option value="square">Square 1080×1080</option>
       </select>
     </span>
-    <!-- profile switcher. A profile is a namespace, not a security boundary — the copy says so. -->
+    <!-- your identity chip. One profile per install (multi-profile retired in 1.9.3 — the roster,
+         switching and namespacing machinery all remain for anyone who made extra profiles before). -->
     <div class="pf-wrap">
-      <button class="btn btn-ghost pf-chip" id="profileBtn" title="Switch profile" aria-haspopup="menu" aria-expanded="false">
+      <button class="btn btn-ghost pf-chip" id="profileBtn" title="Your profile" aria-haspopup="menu" aria-expanded="false">
         <i class="pf-av" id="profileAvatar" aria-hidden="true"></i><span id="profileName">Me</span>
       </button>
       <div class="pf-menu" id="profileMenu" hidden role="menu">
-        <div class="pf-head">Profiles</div>
+        <div class="pf-head">You</div>
         <div class="pf-list" id="profileList"></div>
         <div class="pf-acts">
-          <button class="mini-btn" id="pf-new">+ New</button>
           <button class="mini-btn" id="pf-rename">Rename</button>
-          <button class="mini-btn warn" id="pf-delete">Delete</button>
         </div>
-        <div class="pf-acts">
-          <button class="mini-btn" id="pf-export">Export…</button>
-          <button class="mini-btn" id="pf-import">Import…</button>
-          <input type="file" id="pf-import-input" accept=".json,application/json" hidden>
-        </div>
-        <label class="tog pf-tog"><span>Include listening stats in export</span><input type="checkbox" id="pf-export-stats"></label>
-        <div class="hint">Each profile keeps its own Spotify connection, themes, stickers and settings on this PC. This organises data — it doesn't lock it: anyone using this computer can open any profile.</div>
+        <div class="hint">This name is local to this PC. Your community identity — picture, banner, followers — lives on your creator page: ✦ Community, then the @you chip.</div>
       </div>
     </div>
     <button class="btn btn-icon" id="btn-shortcuts" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">?</button>
@@ -3212,12 +3212,14 @@ function profilePaintChip(){
 function profileRenderMenu(){
   const box = $("profileList"); if (!box) return;
   const cur = activeProfileId();
-  box.innerHTML = profileList().map(p =>
+  /* single profile (the normal state since 1.9.3): no redundant one-row list. Anyone who created
+     extra profiles on an older build still sees the list and can switch — data is never stranded. */
+  const list = profileList();
+  box.innerHTML = list.length < 2 ? "" : list.map(p =>
     '<button class="pf-item' + (p.id === cur ? " on" : "") + '" data-pf="' + p.id + '" role="menuitem">'
     + '<i class="pf-av" style="background:hsl(' + profileAvatarHue(p.name) + ' 62% 46%)">'
     + esc((p.name || "?").trim().charAt(0).toUpperCase() || "?") + '</i>'
     + '<span>' + esc(p.name) + '</span>' + (p.id === cur ? '<b>✓</b>' : "") + '</button>').join("");
-  const del = $("pf-delete"); if (del) del.disabled = profileList().length < 2;
 }
 function profileMenuOpen(on){
   const m = $("profileMenu"), b = $("profileBtn");
@@ -3240,37 +3242,13 @@ function profilesInit(){
     const b = e.target.closest("button[data-pf]"); if (!b) return;
     profileSwitch(b.dataset.pf);
   });
-  $("pf-new").addEventListener("click", async () => {
-    const name = await fsPrompt("Name this profile"); if (!name) return;
-    const id = profileCreate(name);
-    toast("Created “" + name + "” — switching…");
-    profileSwitch(id);
-  });
+  /* 1.9.3: New/Delete/Export/Import retired — one profile per install; identity lives on the community
+     creator page. The roster/switch/namespace machinery stays (legacy multi-profile installs keep
+     switching via the list above), and history export moved to Home → Export history. */
   $("pf-rename").addEventListener("click", async () => {
     const p = activeProfile();
     const name = await fsPrompt("Rename this profile", p.name); if (!name) return;
     profileRename(p.id, name); profilePaintChip(); profileRenderMenu(); toast("Renamed");
-  });
-  $("pf-delete").addEventListener("click", async () => {
-    const list2 = profileList();
-    if (list2.length < 2){ toast("There's only one profile"); return }
-    const p = activeProfile();
-    if (!confirm("Delete the profile “" + p.name + "”?\n\nIts themes, stickers, settings, listening history and Spotify connection are removed from this PC. This can't be undone.")) return;
-    // switch away FIRST — profileDestroy refuses to delete the active profile, and main refuses too
-    const other = list2.find(x => x.id !== p.id);
-    lsSet("fs_active", other.id); PROFILE_NS = other.id + "__";
-    await profileDestroy(p.id);
-    if (EL && EL.setProfile) await EL.setProfile(other.id).catch(() => {});
-    location.reload();
-  });
-  $("pf-export").addEventListener("click", () => {
-    if (typeof profileExport === "function") profileExport($("pf-export-stats").checked);
-    else toast("Export unavailable");
-  });
-  $("pf-import").addEventListener("click", () => $("pf-import-input").click());
-  $("pf-import-input").addEventListener("change", e => {
-    if (typeof profileImport === "function") profileImport(e.target.files && e.target.files[0]);
-    e.target.value = "";
   });
 }
 
@@ -5237,54 +5215,10 @@ async function restoreJSON(text){
    fs_tokens / fs_verifier / fs_state — BACKUP_KEYS never listed them, so a Spotify session cannot leak into
    a shared file by construction. fs_client_id is dropped too: it is install-level now, not the profile's.
    The bundle is verified below rather than trusted, because "tokens are excluded" is a claim worth testing. */
-const PROFILE_NEVER_EXPORT=["fs_tokens","fs_verifier","fs_state","fs_scope_v","fs_client_id","fs_discord_hook"];
-async function profileBundle(withStats){
-  const j=JSON.parse(await backupJSON());
-  PROFILE_NEVER_EXPORT.forEach(k=>{ delete j.data[k] });
-  j.profile={name:activeProfile().name};
-  if(withStats && typeof statsAllPlays==="function"){
-    try{ j.stats={plays:await statsAllPlays(), daily:await statsDaily(), tracks:await statsTracks(), artists:await statsArtists()} }catch(e){}
-  }
-  const leaked=PROFILE_NEVER_EXPORT.filter(k=>JSON.stringify(j).indexOf('"'+k+'"')>=0);
-  if(leaked.length) throw new Error("refusing to export: "+leaked.join(", ")+" present"); // belt and braces
-  return JSON.stringify(j,null,1);
-}
-async function profileExport(withStats){
-  try{
-    const text=await profileBundle(!!withStats);
-    const name="framesaur-profile-"+activeProfile().name.replace(/[^a-z0-9]+/gi,"-").toLowerCase()+".json";
-    const a=document.createElement("a");
-    a.href=URL.createObjectURL(new Blob([text],{type:"application/json"}));
-    a.download=name; a.click();
-    setTimeout(()=>URL.revokeObjectURL(a.href),4000);
-    toast("Exported “"+activeProfile().name+"”"+(withStats?" with stats":"")+" — no Spotify tokens included");
-  }catch(e){ toast("Export failed: "+e.message,5000) }
-}
-/* Import always creates a NEW profile and restores into its namespace — it never overwrites the one you
-   are looking at. The namespace is switched for the writes and put back before the reload. */
-async function profileImport(file){
-  if(!file){ return }
-  try{
-    const text=await file.text();
-    const j=JSON.parse(text);
-    if(!j||j.app!=="framesaur"||!j.data) throw new Error("Not a FrameSaur profile bundle");
-    const name=(j.profile&&j.profile.name)||"Imported";
-    const id=profileCreate(name);
-    /* Commit the switch BEFORE restoring, not after. restoreJSON writes images through assetPut, which
-       targets whatever profile MAIN (Electron) or the memoized IndexedDB handle (browser) is pointing at —
-       so restoring first would file the new profile's backgrounds under the old profile. Switching the
-       namespace, telling main, and dropping the cached db handle first makes every write land correctly. */
-    lsSet("fs_active",id); PROFILE_NS=id+"__";
-    if(EL&&EL.setProfile) await EL.setProfile(id).catch(()=>{});
-    if(typeof assetResetDb==="function") assetResetDb();
-    await restoreJSON(text);
-    if(j.stats&&Array.isArray(j.stats.plays)&&typeof statsAddPlays==="function"){
-      try{ STATS_DB_P=null; STATS_META=null; await statsAddPlays(j.stats.plays,{dedupe:true}) }catch(e){}
-    }
-    toast("Imported “"+name+"” — opening it…");
-    setTimeout(()=>location.reload(),700);
-  }catch(e){ toast("Import failed: "+e.message,5000) }
-}
+/* profileBundle/profileExport/profileImport retired in 1.9.3 with the multi-profile UI: one profile
+   per install, and the portable pieces have dedicated paths (Home → Export history for the listening
+   log, ⚙ → Backup for settings, share codes for themes). PROFILE_NEVER_EXPORT's job — keeping tokens
+   out of anything exportable — lives on in BACKUP_KEYS, which never included them. */
 
 $("set-backup").addEventListener("click",()=>{
   try{
@@ -6126,16 +6060,21 @@ function renderSpotify(){
     const done=n=>'<span class="ob-step '+(n?"done":"")+'">'+(n?"✓":"")+'</span>';
     el.innerHTML =
       '<div class="sp-status"><span class="sp-dot"></span> Not connected</div>'+
-      '<div class="ob"><div class="ob-title">Connect in 3 steps</div>'+
+      '<div class="ob"><div class="ob-title">Connect in 4 steps</div>'+
       '<div class="ob-row">'+done(idOk)+'<div><b>1. Get a Client ID</b> — <a href="#" id="ob-dash">open the Spotify dashboard</a>, create an app (any name), and paste its Client ID here.'+
       '<div class="field" style="margin:6px 0 0"><input type="text" id="sp-client" placeholder="32-character Client ID" spellcheck="false" value="'+cid+'"></div>'+
       (idBad?'<div class="hint warn-text">That doesn’t look like a Client ID (32 letters/digits, no spaces).</div>':'')+
       '</div></div>'+
       '<div class="ob-row">'+done(idOk)+'<div><b>2. Register this redirect URI</b> in that app’s settings — it must match exactly.'+
       '<div class="copy-row" style="margin:6px 0 0"><code>'+REDIRECT_URI.replace("/callback","/<wbr>callback")+'</code><button class="mini-btn" id="sp-copy">Copy</button></div></div></div>'+
-      '<div class="ob-row">'+done(false)+'<div><b>3. Connect</b> and approve in the browser tab that opens.'+
+      /* the allow-list used to be a footnote — and every new friend walked straight into the 403 it
+         warns about. Spotify dev mode enforces it per REQUEST: until the app's owner adds your email,
+         NOTHING works after connect. It earns step billing. */
+      '<div class="ob-row">'+done(false)+'<div><b>3. Get on the app’s allow-list</b> — Spotify runs hobby apps in “development mode”: the app’s <i>owner</i> must add your Spotify account email under <i>User Management</i> in their dashboard (25 seats). Until then, connecting succeeds but every request is refused.'+
+      '<div class="hint" style="margin:4px 0 0">Created the app yourself in step 1? You’re the owner — skip this.</div></div></div>'+
+      '<div class="ob-row">'+done(false)+'<div><b>4. Connect</b> and approve in the browser tab that opens.'+
       '<button class="btn btn-spotify" id="sp-connect" style="margin-top:6px"'+(idOk?"":" disabled")+'>Connect Spotify</button></div></div>'+
-      '<div class="hint">Using someone else’s app (a friend set it up)? Just paste <i>their</i> Client ID — they need to add your Spotify email under <i>User Management</i> in the dashboard.</div></div>';
+      '<div class="hint">Using a friend’s app? Paste <i>their</i> Client ID in step 1 — steps 2 and 3 are theirs to do.</div></div>';
     $("sp-client").oninput=e=>{SP.clientId=e.target.value.trim();safeStore.set("fs_client_id",SP.clientId);renderSpotify();$("sp-client").focus();const v=$("sp-client");v.setSelectionRange(v.value.length,v.value.length)};
     $("sp-copy").onclick=async()=>{try{await navigator.clipboard.writeText(REDIRECT_URI);toast("Copied — paste it into the app’s Redirect URIs")}catch(e){toast("Copy failed — select the text manually")}};
     $("sp-connect").onclick=spAuthorize;
@@ -7945,6 +7884,8 @@ async function cmSignIn(){
 async function cmSignOut(){
   if (!SB) return;
   await SB.auth.signOut(); CM_SESSION = null; CM_MOD = false; CM_MYPROF = null;
+  const av = $("profileAvatar"); if (av){ av.style.backgroundImage = ""; av.style.backgroundSize = "" }
+  if (typeof profilePaintChip === "function") profilePaintChip();   // back to the local letter avatar
   if (CM_FEED === "queue") CM_FEED = "new";
   if (typeof cmProfileClose === "function") cmProfileClose();
   cmNetRenderBar(); await cmNetLoad();
@@ -7968,6 +7909,12 @@ async function cmMyProfLoad(){
   CM_MYPROF = null;
   if (!SB || !CM_SESSION) return;
   try{ CM_MYPROF = (await SB.from("profiles").select("*").eq("id", CM_SESSION.user.id).single()).data }catch(e){}
+  /* one identity, everywhere: once the community knows your face, the topbar chip wears it too */
+  const av = $("profileAvatar");
+  if (av && CM_MYPROF && CM_MYPROF.avatar_url){
+    av.style.backgroundImage = 'url("' + CM_MYPROF.avatar_url.replace(/"/g, "") + '")';
+    av.style.backgroundSize = "cover"; av.textContent = "";
+  }
 }
 
 
@@ -8414,11 +8361,23 @@ async function cmProfileOpen(uid){
   const following = !!(mine.data && mine.data.length);
   const p = prof.data;
 
+  /* the page tells its numbers from what it just loaded: RLS already scopes rows to what this viewer
+     may see, so the counts are honest per-viewer for free */
+  const likesGot = CM_PROF_ROWS.th.concat(CM_PROF_ROWS.stk).reduce((n, r) => n + (r.likes_count | 0), 0);
+  const joined = p.created_at ? new Date(p.created_at).toLocaleDateString([], {month: "short", year: "numeric"}) : "";
+  const statsLine = CM_PROF_ROWS.th.length + " theme" + (CM_PROF_ROWS.th.length === 1 ? "" : "s")
+    + " · " + CM_PROF_ROWS.stk.length + " sticker" + (CM_PROF_ROWS.stk.length === 1 ? "" : "s")
+    + " · ♥ " + likesGot + (joined ? " · joined " + joined : "");
   el.innerHTML =
     cmProfBackBtn()
+    + '<div class="cm-prof-banner' + (p.banner_url ? "" : " cm-prof-nobanner") + '"'
+    + (p.banner_url ? ' style="background-image:url(&quot;' + esc(p.banner_url) + '&quot;)"' : "") + '>'
+    + (isMe ? '<button class="mini-btn cm-banner-btn" data-prof-act="banner">' + (p.banner_url ? "Change banner" : "Add a banner") + '</button>' : "")
+    + '</div>'
     + '<div class="cm-prof-head">'
     + cmAvatarHTML(p, "cm-av-big")
     + '<div class="cm-prof-id"><b>@' + esc(p.handle) + '</b>'
+    + '<span class="cm-prof-stats">' + esc(statsLine) + '</span>'
     + (p.bio ? '<p class="cm-prof-bio">' + esc(p.bio) + '</p>' : (isMe ? '<p class="cm-prof-bio cm-prof-dim">No bio yet — say something.</p>' : ""))
     + (followsLive ? '<span class="cm-prof-counts">'
         + '<button class="cm-plain" data-prof-list="followers"><b>' + (fwr.count | 0) + '</b> followers</button> · '
@@ -8452,8 +8411,8 @@ function cmProfSections(isMe){
   return (
     sec("Themes", R.th.map(r => cmNetTile(r, {useOnly: !isMe, mine: isMe})).join(""))
     + sec("Stickers", R.stk.map(cmProfStkTile).join(""))
-    + sec("Favorite themes", R.likedTh.map(r => cmNetTile(r, {useOnly: true})).join(""))
-    + sec("Favorite stickers", R.likedStk.map(cmProfStkTile).join(""))
+    + sec("♥ Favorite themes", R.likedTh.map(r => cmNetTile(r, {useOnly: true})).join(""))
+    + sec("♥ Favorite stickers", R.likedStk.map(cmProfStkTile).join(""))
     + (R.th.length || R.stk.length || R.likedTh.length || R.likedStk.length
         ? "" : '<p class="cm-empty">Nothing published or liked yet.</p>')
   );
@@ -8486,6 +8445,7 @@ function cmProfBind(el){
       if (a === "back") cmProfileClose();
       else if (a === "follow") await cmFollowToggle(CM_PROF, act);
       else if (a === "avatar") cmAvatarPick();
+      else if (a === "banner") cmBannerPick();
       else if (a === "bio") await cmBioEdit();
       else if (a === "report") await cmProfileReport(CM_PROF);
       return;
@@ -8582,6 +8542,39 @@ async function cmProfileReport(uid){
   if (!reason) return;
   const {error} = await SB.from("reports").insert({reporter: CM_SESSION.user.id, item_kind: "profile", item_id: uid, reason: reason.slice(0, 500)});
   toast(error ? "You've already reported this page" : "Reported — a moderator will take a look");
+}
+function cmBannerPick(){
+  const inp = document.createElement("input");
+  inp.type = "file"; inp.accept = "image/png,image/jpeg,image/webp";
+  inp.onchange = () => { if (inp.files && inp.files[0]) cmBannerUpload(inp.files[0]) };
+  inp.click();
+}
+async function cmBannerUpload(file){
+  if (!SB || !CM_SESSION) return;
+  try{
+    /* same recipe as avatars, banner-shaped: canvas re-encode is the sanitiser AND the size control —
+       1100x260 cover-crop, JPEG (banners are photos more often than pixel art; 0.85 stays far under
+       the bucket's 400KB) */
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    await new Promise((res, rej) => { img.onload = res; img.onerror = rej; img.src = url });
+    URL.revokeObjectURL(url);
+    const W = 1100, H = 260;
+    const cv = document.createElement("canvas"); cv.width = W; cv.height = H;
+    const g = cv.getContext("2d");
+    const s = Math.max(W / img.width, H / img.height);
+    g.drawImage(img, (W - img.width * s) / 2, (H - img.height * s) / 2, img.width * s, img.height * s);
+    const blob = await new Promise(res => cv.toBlob(res, "image/jpeg", 0.85));
+    if (!blob || blob.size > 409600){ toast("That image doesn't compress under the 400KB banner cap — try a simpler one"); return }
+    const path = CM_SESSION.user.id + "/banner.jpg";
+    const up = await SB.storage.from("banners").upload(path, blob, {contentType: "image/jpeg", upsert: true});
+    if (up.error){ toast("Upload failed: " + up.error.message + (up.error.message.includes("not found") ? " — the banners bucket needs migration 0011" : ""), 6000); return }
+    const pub = SB.storage.from("banners").getPublicUrl(path).data.publicUrl + "?v=" + Date.now();
+    const upd = await SB.from("profiles").update({banner_url: pub}).eq("id", CM_SESSION.user.id);
+    if (upd.error){ toast("Couldn't save the banner: " + upd.error.message, 5000); return }
+    toast("Banner up ✦");
+    await cmProfileOpen(CM_SESSION.user.id);
+  }catch(e){ toast("Couldn't read that image", 4000) }
 }
 async function cmBioEdit(){
   if (!SB || !CM_SESSION) return;
@@ -8684,11 +8677,12 @@ async function cmModerate(row, status, table){
 /* profile moderation (0010): null the avatar/bio row fields, then delete the storage object — the row is
    what every surface renders, the object delete just stops the raw URL serving (CDN edge may linger). */
 async function cmModClearProfile(uid){
-  if (!confirm("Clear this creator page's picture and bio?")) return false;
-  const up = await SB.from("profiles").update({avatar_url: null, bio: null}).eq("id", uid);
+  if (!confirm("Clear this creator page's picture, banner and bio?")) return false;
+  const up = await SB.from("profiles").update({avatar_url: null, banner_url: null, bio: null}).eq("id", uid);
   if (up.error){ toast("Couldn't clear: " + up.error.message, 5000); return false }
   await SB.storage.from("avatars").remove([uid + "/avatar.png"]).catch(() => {});
-  toast("Cleared — their picture and bio are gone");
+  await SB.storage.from("banners").remove([uid + "/banner.jpg"]).catch(() => {});
+  toast("Cleared — their picture, banner and bio are gone");
   return true;
 }
 
@@ -9617,6 +9611,12 @@ if(!IS_WIDGET){
   if(typeof profilesInit==="function") profilesInit();
   if(typeof tbMotionInit==="function") tbMotionInit();
   if(typeof tbRxInit==="function") tbRxInit();
+/* browser mode: the listening log lives in evictable best-effort storage unless we ask — Chrome may
+   otherwise wipe the IndexedDB under disk pressure, which for an app whose stats pitch is "honest
+   numbers that live on your PC" means history silently vanishing. Electron profiles are exempt. */
+if(!EL && !IS_WIDGET && navigator.storage && navigator.storage.persist)
+  navigator.storage.persist().then(ok=>{ if(!ok) console.warn("[framesaur] browser declined persistent storage - listening history may be evicted under disk pressure") }).catch(()=>{});
+
 /* one-time post-update nudge; a first run just records the version */
 if(EL&&EL.updateStatus&&!IS_WIDGET) EL.updateStatus().then(st=>{ if(!st||!st.appVersion) return;
   const seen=safeStore.get("fs_seen_version");
