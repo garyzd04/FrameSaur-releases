@@ -1140,6 +1140,16 @@ body .mini-btn.primary:hover{background:var(--leaf-hover,var(--leaf-dark))}
 .cm-stk-tray button:hover{border-color:var(--leaf)}
 .cm-stk-tray img{width:100%;height:100%;object-fit:contain}
 
+/* ---------- community layout: live first, curated as a collapsed starter section ---------- */
+.cm-curated{border:1px solid var(--line);border-radius:12px;padding:0 12px;margin-top:10px;background:var(--panel)}
+.cm-curated summary{cursor:pointer;list-style:none;padding:10px 2px;font-size:11px;font-weight:900;
+  letter-spacing:.05em;text-transform:uppercase;color:var(--ink-soft);display:flex;align-items:center;gap:6px}
+.cm-curated summary::-webkit-details-marker{display:none}
+.cm-curated summary::after{content:"▸";margin-left:auto;transition:transform .18s ease}
+.cm-curated[open] summary::after{transform:rotate(90deg)}
+.cm-curated .cm-grid{margin:2px 0 12px}
+.cm-curated .cm-count{text-transform:none;letter-spacing:0}
+
 /* ---------- community profiles ---------- */
 /* while a profile is open it REPLACES the browsing surfaces — original hidden flags stay untouched,
    so closing simply removes the attribute and the panel is exactly as you left it */
@@ -1300,6 +1310,11 @@ body.widget .demo-chip{position:absolute;top:34px;right:34px;z-index:9;font-size
   letter-spacing:.08em;text-transform:uppercase;background:rgba(20,20,20,.55);color:#fff;
   border-radius:999px;padding:2px 7px;pointer-events:none}
 body.widget .demo-chip[hidden]{display:none}
+/* one-time first-open hint (fs_widget_hinted): the widget's controls are all hover-revealed */
+body.widget .pip-hint{position:absolute;bottom:34px;left:50%;transform:translateX(-50%);z-index:9;
+  font-size:10px;font-weight:800;letter-spacing:.03em;white-space:nowrap;background:rgba(20,20,20,.62);
+  color:#fff;border-radius:999px;padding:4px 12px;pointer-events:none;opacity:1;transition:opacity 1s ease}
+body.widget .pip-hint.fade{opacity:0}
 body.widget .topbar,body.widget .side,body.widget .tipbar,body.widget .corner,body.widget .float-note{display:none !important}
 body.widget .shell{grid-template-columns:1fr}
 body.widget .stage{position:fixed;inset:0;min-height:0;overflow:hidden;-webkit-app-region:drag}
@@ -2110,20 +2125,24 @@ body[data-studio="blackcat"] .home[data-deco="on"] .hm::after{
     <div class="cm-bar">
       <div class="seg" id="cmTabs" role="tablist" aria-label="Gallery section">
         <button data-tab="themes" class="on">Themes</button>
-        <button data-tab="packs">Sticker packs</button>
+        <button data-tab="packs">Stickers</button>
       </div>
       <input type="search" id="cmSearch" class="tb-input" placeholder="Search themes, authors, tags…" aria-label="Search the gallery">
-      <span class="cm-count" id="cmCount"></span>
     </div>
-    <div class="cm-tags" id="cmTags"></div>
     <div class="cm-preview" id="cmPreviewBar" hidden>
       <span>Previewing <b id="cmPreviewName"></b> — nothing is saved until you install it.</span>
       <button class="mini-btn" id="cmPreviewStop">Stop preview</button>
       <button class="mini-btn primary" id="cmPreviewKeep">Install this</button>
     </div>
-    <div class="cm-grid" id="cmGrid"></div>
-    <div id="cmStkNet" hidden></div>
+    <!-- the LIVE community is the face of the panel; the curated set that ships in the box is a
+         collapsed starter section below it (auto-opened when Phase B isn't configured) -->
     <div class="cm-net" id="cmNet" hidden></div>
+    <div id="cmStkNet" hidden></div>
+    <details class="cm-curated" id="cmCurated">
+      <summary>★ Starter picks — ship with the app · <span class="cm-count" id="cmCount"></span></summary>
+      <div class="cm-tags" id="cmTags"></div>
+      <div class="cm-grid" id="cmGrid"></div>
+    </details>
     <div class="cm-profile" id="cmProfile" hidden></div>
     <div class="cm-foot">
       <span class="hint">Curated themes ship with FrameSaur; installing anything keeps it local. Publishing sends only the theme you choose — never your Spotify login or listening data.</span>
@@ -3010,27 +3029,35 @@ function themeDef(){
    was full of it). alert()/confirm() ARE implemented, so only prompt needed replacing. Drop-in async
    shape: resolves the string on OK/Enter, null on Cancel/Esc/backdrop — same contract callers already
    check. Esc stops propagation so the global Esc (js/history.js) doesn't also close the dialog UNDER it. */
-function fsPrompt(msg, def){
+function fsPrompt(msg, def, opts){
+  opts=opts||{};
   return new Promise(res=>{
     const prev=document.activeElement;
     const m=document.createElement("div");
     m.className="modal"; m.setAttribute("role","dialog"); m.setAttribute("aria-modal","true"); m.setAttribute("aria-label",msg);
+    /* multiline: a textarea (Enter = newline, Ctrl+Enter or OK submits) — a 200-char bio in a one-line
+       input was the round-7 complaint. Single-line keeps Enter-to-submit. */
+    const field=opts.multiline
+      ? '<textarea class="tb-input" rows="4" style="resize:vertical;min-height:72px"></textarea>'
+      : '<input class="tb-input" type="text">';
     m.innerHTML='<div class="modal-card" style="width:min(440px,92vw)">'
       +'<div class="modal-head"><span></span><button class="mini-btn" data-x aria-label="Cancel">✕</button></div>'
-      +'<div class="field"><label></label><input class="tb-input" type="text"></div>'
+      +'<div class="field"><label></label>'+field+'</div>'
       +'<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px">'
+      +(opts.multiline?'<span class="hint" style="margin-right:auto">Ctrl+Enter to save</span>':'')
       +'<button class="mini-btn" data-x>Cancel</button><button class="mini-btn primary" data-ok>OK</button></div></div>';
     m.querySelector(".modal-head span").textContent="FrameSaur";
     m.querySelector("label").textContent=msg;
-    const inp=m.querySelector("input");
+    const inp=m.querySelector("input,textarea");
     inp.value=def==null?"":String(def);
+    if(opts.maxlength) inp.maxLength=opts.maxlength;
     const done=v=>{ m.remove(); if(prev&&document.contains(prev)){ try{prev.focus()}catch(e){} } res(v) };
     m.addEventListener("click",e=>{
       if(e.target.closest("[data-ok]")) done(inp.value);
       else if(e.target===m||e.target.closest("[data-x]")) done(null);
     });
     inp.addEventListener("keydown",e=>{
-      if(e.key==="Enter"){ e.preventDefault(); done(inp.value) }
+      if(e.key==="Enter"&&(!opts.multiline||e.ctrlKey)){ e.preventDefault(); done(inp.value) }
       else if(e.key==="Escape"){ e.stopPropagation(); done(null) }
     });
     document.body.appendChild(m);
@@ -3206,9 +3233,20 @@ function profileAvatarHue(name){ return hash(String(name || "?")) % 360 }
 function profilePaintChip(){
   const p = activeProfile(), av = $("profileAvatar"), nm = $("profileName");
   if (!av || !nm) return;
+  nm.textContent = p.name;
+  /* the community avatar (cached by cmMyProfLoad, cleared on sign-out) wins over the letter — this is
+     what makes "your face follows you" true at BOOT instead of only after opening Community */
+  const face = safeStore.get("fs_cm_avatar");
+  if (face){
+    av.textContent = "";
+    av.style.background = "";
+    av.style.backgroundImage = 'url("' + face.replace(/"/g, "") + '")';
+    av.style.backgroundSize = "cover";
+    return;
+  }
+  av.style.backgroundImage = "";
   av.textContent = (p.name || "?").trim().charAt(0).toUpperCase() || "?";
   av.style.background = "hsl(" + profileAvatarHue(p.name) + " 62% 46%)";
-  nm.textContent = p.name;
 }
 function profileRenderMenu(){
   const box = $("profileList"); if (!box) return;
@@ -7739,6 +7777,10 @@ function openCommunity(){
   if (IS_WIDGET) return;
   const m = $("communityModal"); if (!m) return;
   m.hidden = false; cmRender();
+  /* the curated set is a collapsed starter section under the live community — unless Phase B isn't
+     configured, in which case curated IS the gallery and starts open */
+  const cu = $("cmCurated");
+  if (cu && !(typeof cmNetConfigured === "function" && cmNetConfigured())) cu.open = true;
   if (typeof cmNetOpen === "function") cmNetOpen();   // Phase B attaches here when configured
 }
 function closeCommunity(){
@@ -7749,7 +7791,16 @@ function communityInit(){
   if (IS_WIDGET) return;
   const open = $("btn-community"); if (open) open.addEventListener("click", openCommunity);
   const close = $("cm-close"); if (close) close.addEventListener("click", closeCommunity);
-  $("cmSearch").addEventListener("input", cmRender);
+  /* one box searches BOTH halves: the curated grid live-filters, and the community themes feed
+     re-queries (debounced — each keystroke would otherwise be a network round trip) */
+  let cmSearchT = null;
+  $("cmSearch").addEventListener("input", () => {
+    cmRender();
+    clearTimeout(cmSearchT);
+    cmSearchT = setTimeout(() => {
+      if (CM_TAB === "themes" && typeof SB !== "undefined" && SB && typeof cmNetLoad === "function") cmNetLoad();
+    }, 350);
+  });
   document.querySelectorAll("#cmTabs button").forEach(b =>
     b.addEventListener("click", () => { CM_TAB = b.dataset.tab; CM_TAG = ""; cmRender() }));
   $("cmTags").addEventListener("click", e => {
@@ -7823,7 +7874,7 @@ function cmLoadSdk(){
 async function cmNetOpen(){
   if (!cmNetConfigured()) return;              // Phase A only — this is a normal, supported state
   const net = $("cmNet"); if (!net) return;
-  net.hidden = false;
+  net.hidden = (typeof CM_TAB !== "undefined" && CM_TAB !== "themes");   // the themes tab's face only
   try{
     if (!SB){
       const sdk = await cmLoadSdk();
@@ -7889,7 +7940,7 @@ async function cmSignIn(){
 async function cmSignOut(){
   if (!SB) return;
   await SB.auth.signOut(); CM_SESSION = null; CM_MOD = false; CM_MYPROF = null;
-  const av = $("profileAvatar"); if (av){ av.style.backgroundImage = ""; av.style.backgroundSize = "" }
+  safeStore.del("fs_cm_avatar");                                    // cache cleared BEFORE the repaint
   if (typeof profilePaintChip === "function") profilePaintChip();   // back to the local letter avatar
   if (CM_FEED === "queue") CM_FEED = "new";
   if (typeof cmProfileClose === "function") cmProfileClose();
@@ -7925,12 +7976,11 @@ async function cmMyProfLoad(){
   CM_MYPROF = null;
   if (!SB || !CM_SESSION) return;
   try{ CM_MYPROF = (await SB.from("profiles").select("*").eq("id", CM_SESSION.user.id).single()).data }catch(e){}
-  /* one identity, everywhere: once the community knows your face, the topbar chip wears it too */
-  const av = $("profileAvatar");
-  if (av && CM_MYPROF && CM_MYPROF.avatar_url){
-    av.style.backgroundImage = 'url("' + CM_MYPROF.avatar_url.replace(/"/g, "") + '")';
-    av.style.backgroundSize = "cover"; av.textContent = "";
-  }
+  /* one identity, everywhere: once the community knows your face, the topbar chip wears it too — and the
+     url is CACHED (per-profile, via safeStore) so profilePaintChip can paint it at BOOT. Without the
+     cache, every session showed the letter avatar until Community happened to be opened once. */
+  safeStore.set("fs_cm_avatar", (CM_MYPROF && CM_MYPROF.avatar_url) || "");
+  if (typeof profilePaintChip === "function") profilePaintChip();
 }
 
 
@@ -8132,18 +8182,21 @@ async function cmNetPublish(){
    v1 is stills only: an animated sticker is a PAIR (original bytes + first-frame still) and publishing
    both halves properly deserves its own pass. Likes/saves for stickers are schema-ready but UI-later. */
 let CM_STK = [];               // last sticker rows rendered (dispatch reads from here)
-let CM_STK_LOADED = false;
 
 function cmStkSync(){
   const box = $("cmStkNet"); if (!box) return;
   const show = (typeof CM_TAB !== "undefined" && CM_TAB === "packs") && cmNetConfigured();
   box.hidden = !show;
-  if (show && !CM_STK_LOADED) cmStkLoad();
+  /* the live THEMES half is the Themes tab's face; hide it on the Stickers tab so the two live grids
+     never stack. (An earlier CM_STK_LOADED once-per-session gate made the sticker grid stale until you
+     tried PUBLISHING one — every show reloads now; it is one query.) */
+  const net = $("cmNet");
+  if (net && cmNetConfigured()) net.hidden = (typeof CM_TAB !== "undefined" && CM_TAB !== "themes");
+  if (show) cmStkLoad();
 }
 
 async function cmStkLoad(){
   const box = $("cmStkNet"); if (!box || !SB) return;
-  CM_STK_LOADED = true;
   const uid = CM_SESSION ? CM_SESSION.user.id : null;
   let sel = SB.from("stickers").select("*").order("created_at", {ascending: false}).limit(40);
   /* signed in you also see your OWN pending/rejected rows (with a status chip); signed out, approved only */
@@ -8152,8 +8205,9 @@ async function cmStkLoad(){
   CM_STK = r.data || [];
   if (typeof cmDecorateBy === "function") await cmDecorateBy(CM_STK);   // same author mechanism as themes
   box.innerHTML =
-    '<div class="cm-bar"><b class="cm-stk-title">From the community</b><span class="spacer"></span>'
-    + (CM_SESSION ? '<button class="mini-btn" id="cmStkPub">Publish a sticker</button>'
+    '<div class="cm-bar"><b class="cm-stk-title">Community stickers</b><span class="spacer"></span>'
+    + '<button class="mini-btn" id="cmStkRefresh" title="Refresh" aria-label="Refresh community stickers">↻</button>'
+    + (CM_SESSION ? '<button class="mini-btn primary" id="cmStkPub">Publish a sticker</button>'
                   : '<span class="cm-count">Sign in (Themes tab) to publish yours</span>')
     + '</div>'
     + '<div class="cm-stk-pick" id="cmStkPick" hidden></div>'
@@ -8161,6 +8215,7 @@ async function cmStkLoad(){
     + (CM_STK.length ? CM_STK.map(cmStkTile).join("") : '<p class="cm-empty">No community stickers yet — publish the first one.</p>')
     + '</div>';
   const pb = $("cmStkPub"); if (pb) pb.onclick = cmStkPickToggle;
+  const rf = $("cmStkRefresh"); if (rf) rf.onclick = () => cmStkLoad();
   box.onclick = cmStkDispatch;
 }
 
@@ -8232,7 +8287,7 @@ async function cmStkDispatch(e){
     const cs = CUSTOM_STICKERS.find(x => x.id === pub.dataset.stkPub); if (!cs) return;
     const name = await fsPrompt("Name this sticker", "My sticker"); if (name === null) return;
     $("cmStkPick").hidden = true;
-    if (await cmStkPublishSrc(cs.src, name || "My sticker")){ CM_STK_LOADED = false; cmStkSync() }
+    if (await cmStkPublishSrc(cs.src, name || "My sticker")) cmStkSync();
     return;
   }
   const btn = e.target.closest("button[data-stk-act]"); if (!btn) return;
@@ -8246,7 +8301,7 @@ async function cmStkDispatch(e){
     /* the public URL may keep serving from the CDN edge for a while after removal — the row is gone
        from every feed immediately, which is what matters; do not "verify" deletion by fetching the URL */
     toast("“" + row.name + "” removed");
-    CM_STK_LOADED = false; cmStkSync();
+    cmStkSync();
   }
 }
 
@@ -8595,7 +8650,7 @@ async function cmBannerUpload(file){
 async function cmBioEdit(){
   if (!SB || !CM_SESSION) return;
   const cur = await SB.from("profiles").select("bio").eq("id", CM_SESSION.user.id).single();
-  const bio = await fsPrompt("Your bio (200 characters max):", (cur.data && cur.data.bio) || "");
+  const bio = await fsPrompt("Your bio (200 characters max):", (cur.data && cur.data.bio) || "", {multiline: true, maxlength: 200});
   if (bio === null) return;
   const {error} = await SB.from("profiles").update({bio: bio.trim().slice(0, 200) || null}).eq("id", CM_SESSION.user.id);
   toast(error ? ("Couldn't save: " + error.message + (String(error.message).includes("bio") ? " — bio needs migration 0008" : "")) : "Bio updated");
@@ -9401,6 +9456,16 @@ if(EL && IS_WIDGET){
   mk("⌂ Studio",()=>EL.focusStudio());
   mk("✕",()=>EL.closeWidget());
   document.querySelector(".stage").appendChild(bar);
+  /* first-open hint: every widget control is hover/gesture-revealed, and nothing anywhere told anyone —
+     the only documentation was the studio's ? sheet. Once ever, not per session; peeks never hint. */
+  if(safeStore.get("fs_widget_hinted")!=="1" && !/[?&]peekin=1/.test(location.search)){
+    safeStore.set("fs_widget_hinted","1");
+    const hint=document.createElement("div"); hint.className="pip-hint";
+    hint.textContent="hover for controls · right-click for more";
+    wrap.appendChild(hint);
+    setTimeout(()=>hint.classList.add("fade"),6000);
+    setTimeout(()=>hint.remove(),7000);
+  }
   // reaching for a song-change peek keeps it open (main ignores this outside a peek; not in ghost mode — you can't "reach for" a click-through window)
   let GHOST=false;
   ["mouseover","pointerdown"].forEach(evName=>
