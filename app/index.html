@@ -390,6 +390,11 @@ body.sp-live #trackLiveNote{display:block}
 .sm-palette button{aspect-ratio:1;border-radius:8px;border:1.5px solid var(--line);cursor:pointer}
 .sm-palette button.on{outline:2.5px solid var(--leaf);outline-offset:1.5px}
 .sm-tools{display:flex;gap:6px;align-items:center;margin-top:8px}
+.sm-frames{display:flex;gap:5px;flex-wrap:wrap}
+.sm-fr{width:28px;height:28px;border:1px solid var(--line);border-radius:6px;background:
+  repeating-conic-gradient(rgba(127,127,127,.18) 0 25%,transparent 0 50%) 0 0/8px 8px;cursor:pointer;
+  image-rendering:pixelated}
+.sm-fr.on{border-color:var(--leaf);box-shadow:0 0 0 1px var(--leaf)}
 .sm-tools .mini-btn.on{background:var(--leaf-tint);border-color:var(--leaf)}
 .sm-tools input[type=color]{width:34px;height:28px;padding:2px;border:1.5px solid var(--line);border-radius:8px;background:var(--panel-2);cursor:pointer;margin-left:auto}
 #sm-upload{width:100%;font-size:12px;color:var(--ink-soft)}
@@ -576,7 +581,9 @@ body.sp-live #trackLiveNote{display:block}
 .frame[data-layout="strip"] .leaf-corner,.frame[data-layout="strip"] .paw-trail,.frame[data-layout="strip"] .planet,.frame[data-layout="strip"] .dino-sun,
 .frame[data-layout="strip"] .retro-sun-deco,.frame[data-layout="strip"] .horizon-lines,.frame[data-layout="strip"] .px-lives,
 .frame[data-layout="strip"] .y2k-bubbles,.frame[data-layout="strip"] .pills,.frame[data-layout="strip"] .orbit,.frame[data-layout="strip"] .tide,
-.frame[data-layout="strip"] .cat-tail,.frame[data-layout="strip"] .cat-yarn{display:none !important}
+.frame[data-layout="strip"] .cat-tail,.frame[data-layout="strip"] .cat-yarn,
+.frame[data-layout="strip"] .jade-clouds,.frame[data-layout="strip"] .jade-lantern,.frame[data-layout="strip"] .jade-seal,.frame[data-layout="strip"] .jade-lines,
+.frame[data-layout="strip"] .ufo-hills,.frame[data-layout="strip"] .ufo-saucer{display:none !important}
 /* strip is 560×130 — the ears shrink and tuck in rather than eating the whole top edge */
 .frame[data-layout="strip"] .cat-ears{width:54px;height:19px;right:10px}
 
@@ -602,7 +609,9 @@ body.sp-live #trackLiveNote{display:block}
 
 /* ============ THEME DECOR ============ */
 .deco{position:absolute;pointer-events:none}
-[data-theme] .only-dino,[data-theme] .only-y2k,[data-theme] .only-space,[data-theme] .only-minimal,[data-theme] .only-sunset,[data-theme] .only-ocean,[data-theme] .only-arcade,[data-theme] .only-mono,[data-theme] .only-cat{display:none}
+[data-theme] .only-dino,[data-theme] .only-y2k,[data-theme] .only-space,[data-theme] .only-minimal,[data-theme] .only-sunset,[data-theme] .only-ocean,[data-theme] .only-arcade,[data-theme] .only-mono,[data-theme] .only-cat,[data-theme] .only-jade,[data-theme] .only-ufo{display:none}
+[data-theme="jade"] .only-jade{display:block}
+[data-theme="ufo"] .only-ufo{display:block}
 [data-theme="cat"] .only-cat{display:block}
 [data-theme="mono"] .only-mono{display:block}
 [data-theme="dino"] .only-dino{display:block}
@@ -668,6 +677,23 @@ body.sp-live #trackLiveNote{display:block}
   background:none;-webkit-background-clip:initial;background-clip:initial;
   color:var(--f-accent);filter:none;
 }
+/* jade — a scroll painting: double gold mount lines, auspicious clouds, a hanging lantern, a seal */
+.jade-lines{inset:7px;border:1px solid var(--f-accent2);opacity:.4;border-radius:18px;pointer-events:none}
+.jade-lines::after{content:"";position:absolute;inset:3px;border:1px solid var(--f-accent2);opacity:.65;border-radius:14px}
+.jade-clouds{left:10px;bottom:58px;width:150px;z-index:0}
+.jade-lantern{top:0;right:24px;width:26px;height:46px;z-index:2;transform-origin:50% 0;--m-pre:none}
+.jade-seal{right:16px;bottom:16px;width:20px;height:20px;z-index:0;opacity:.85}
+.frame[data-layout="square"] .jade-clouds{bottom:44px;width:120px}
+.frame[data-layout="square"] .jade-seal{bottom:12px}
+/* ufo — night pasture: sparse stars, rolling hills with a crop circle, a scouting saucer */
+.ufo-stars{inset:0;z-index:0}
+.ufo-stars i{position:absolute;width:2.5px;height:2.5px;border-radius:50%;background:var(--f-sub);opacity:.75}
+.ufo-hills{left:0;right:0;bottom:0;height:56px;z-index:0}
+.ufo-hills svg{width:100%;height:100%;display:block}
+.ufo-saucer{top:2px;left:10px;width:58px;height:50px;z-index:2;--m-pre:none}
+.frame[data-layout="square"] .ufo-saucer{width:46px}
+.frame[data-layout="square"] .ufo-hills{height:42px}
+
 /* space */
 .starfield{inset:0}
 .starfield i{position:absolute;width:2.5px;height:2.5px;border-radius:50%;background:#fff;opacity:.85}
@@ -1140,6 +1166,22 @@ body .mini-btn.primary:hover{background:var(--leaf-hover,var(--leaf-dark))}
 .cm-stk-tray button:hover{border-color:var(--leaf)}
 .cm-stk-tray img{width:100%;height:100%;object-fit:contain}
 
+/* ---------- theme grid: yours first, defaults collapsible ---------- */
+.tg-defaults{grid-column:1/-1;border:1px solid var(--line);border-radius:12px;padding:0 8px;background:var(--panel)}
+.tg-defaults summary{cursor:pointer;list-style:none;padding:8px 4px;font-size:10.5px;font-weight:900;
+  letter-spacing:.05em;text-transform:uppercase;color:var(--ink-soft);display:flex;align-items:center}
+.tg-defaults summary::-webkit-details-marker{display:none}
+.tg-defaults summary::after{content:"▸";margin-left:auto;transition:transform .18s ease}
+.tg-defaults[open] summary::after{transform:rotate(90deg)}
+.tg-inner{display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:8px;padding:2px 0 10px}
+
+/* publish picker (mirrors the sticker picker) */
+.cm-pick-list{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.cm-pick-list button{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:10px;
+  background:var(--panel);padding:6px 12px 6px 6px;cursor:pointer;font:inherit;font-size:12px;font-weight:800;color:var(--ink)}
+.cm-pick-list button:hover{border-color:var(--leaf)}
+.cm-pick-list .theme-thumb{width:34px;height:24px}
+
 /* ---------- community layout: live first, curated as a collapsed starter section ---------- */
 .cm-curated{border:1px solid var(--line);border-radius:12px;padding:0 12px;margin-top:10px;background:var(--panel)}
 .cm-curated summary{cursor:pointer;list-style:none;padding:10px 2px;font-size:11px;font-weight:900;
@@ -1413,6 +1455,17 @@ body.sp-connected #spGuide{display:none}
 @media (min-width:1200px){
   #builderModal{background:transparent;pointer-events:none;place-items:center end;padding-right:14px}
   #builderModal .modal-card{pointer-events:auto;box-shadow:0 18px 60px rgba(0,0,0,.55),0 4px 14px rgba(0,0,0,.3)}
+  /* the docked builder used to OVERLAY: it covered the right rail by design, but on narrower windows it
+     ran past the rail onto the CARD it exists to preview (owner report, twice). Now builder width and
+     the shell's reserved padding share ONE variable, sized so the stage always keeps >=380px for the
+     card: the right rail steps aside, the stage shifts left, and the card stays fully visible. */
+  body.builder-open{--tbw:clamp(480px, calc(100vw - 690px), 720px)}
+  body.builder-open #builderModal .modal-card{width:var(--tbw)}
+  /* no transition on this padding: a layout transition freezes at its START value in an occluded page
+     (transitions don't tick without compositing) and then OVERRIDES every later write for as long as it
+     "runs" — the same physics as the rAF lessons. A static jump is fine.
+     The right rail is .side-right (grid-area 1/3) — the 0px third track hides it; #homeView spans on top. */
+  body.builder-open .shell{grid-template-columns:270px 1fr 0px;padding-right:var(--tbw)}
 }
 /* Motion/Reactions edit the ACTIVE look while the left column edits the DRAFT — while one of those tabs is
    open, the draft column steps back so the dialog reads as being about the card, not the draft. */
@@ -1701,6 +1754,38 @@ body[data-studio="blackcat"] .home[data-deco="on"] .hm::after{
           </svg></div>
           <div class="deco only-cat cat-tail"><svg viewBox="0 0 70 46" fill="none">
             <path d="M66 44 Q66 20 48 14 Q30 8 24 20 Q19 30 30 32 Q38 33 37 25" stroke="var(--f-skin)" stroke-width="7" stroke-linecap="round"/>
+          </svg></div>
+          <div class="deco only-jade jade-lines"></div>
+          <div class="deco only-jade jade-clouds"><svg viewBox="0 0 120 44" fill="none">
+            <path d="M8 34c-6-2-6-10 1-11-2-7 8-11 12-5 6-5 15 0 12 8 8 0 9 10 1 11z" fill="var(--f-label)" opacity=".16"/>
+            <path d="M64 40c-5-1-5-8 0-9-1-6 7-9 10-4 5-4 12 0 10 6 6 0 7 8 0 8z" fill="var(--f-label)" opacity=".12"/>
+            <path d="M34 20c4-1 5-5 2-7M88 24c4-1 5-5 2-7" stroke="var(--f-accent2)" stroke-width="1.6" stroke-linecap="round" opacity=".5"/>
+          </svg></div>
+          <div class="deco only-jade jade-lantern"><svg viewBox="0 0 26 46">
+            <path d="M13 0v6" stroke="var(--f-label)" stroke-width="1.4"/>
+            <rect x="8" y="6" width="10" height="3" rx="1.5" fill="var(--f-accent2)"/>
+            <ellipse cx="13" cy="19" rx="9" ry="10" fill="var(--f-accent2)"/>
+            <path d="M6.5 15h13M6 19h14M6.5 23h13" stroke="var(--f-card)" stroke-width="1" opacity=".55"/>
+            <rect x="8" y="28" width="10" height="3" rx="1.5" fill="var(--f-accent2)"/>
+            <path d="M13 31v5" stroke="var(--f-label)" stroke-width="1.2"/>
+            <path d="M11 36h4l-1 8h-2z" fill="var(--f-accent2)" opacity=".85"/>
+          </svg></div>
+          <div class="deco only-jade jade-seal"><svg viewBox="0 0 22 22">
+            <rect x="1" y="1" width="20" height="20" rx="3" fill="var(--f-accent2)" opacity=".9"/>
+            <path d="M6 6.5h10M6 11h10M6 15.5h6M11.5 6.5v9" stroke="var(--f-card)" stroke-width="1.8" opacity=".9"/>
+          </svg></div>
+          <div class="deco only-ufo ufo-stars"><i style="left:8%;top:8%"></i><i class="tw" style="left:22%;top:16%"></i><i style="left:38%;top:6%"></i><i class="tw" style="left:60%;top:12%"></i><i style="left:80%;top:7%"></i><i class="tw" style="left:91%;top:20%"></i><i style="left:14%;top:30%"></i><i class="tw" style="left:70%;top:27%"></i></div>
+          <div class="deco only-ufo ufo-hills"><svg viewBox="0 0 350 60" preserveAspectRatio="none">
+            <path d="M0 34C40 20 80 24 120 34s90 16 140 6 60-12 90-4V60H0z" fill="var(--f-line)" opacity=".55"/>
+            <ellipse cx="120" cy="46" rx="26" ry="5" fill="none" stroke="var(--f-accent)" stroke-width="1.4" opacity=".5"/>
+            <ellipse cx="120" cy="46" rx="14" ry="2.6" fill="none" stroke="var(--f-accent)" stroke-width="1.2" opacity=".7"/>
+          </svg></div>
+          <div class="deco only-ufo ufo-saucer"><svg viewBox="0 0 64 54">
+            <path d="M22 46 32 18 42 46z" fill="var(--f-accent)" opacity=".16"/>
+            <ellipse cx="32" cy="12" rx="8" ry="6" fill="var(--f-spike)" opacity=".9"/>
+            <ellipse cx="32" cy="16" rx="16" ry="6" fill="var(--f-skin)"/>
+            <ellipse cx="32" cy="14.5" rx="16" ry="4.5" fill="var(--f-sub)" opacity=".35"/>
+            <circle cx="22" cy="17.5" r="1.5" fill="var(--f-accent2)"/><circle cx="32" cy="19" r="1.5" fill="var(--f-accent2)"/><circle cx="42" cy="17.5" r="1.5" fill="var(--f-accent2)"/>
           </svg></div>
           <div class="deco only-cat cat-yarn"><svg viewBox="0 0 54 44">
             <circle cx="18" cy="26" r="15" fill="var(--f-accent2)"/>
@@ -2059,6 +2144,8 @@ body[data-studio="blackcat"] .home[data-deco="on"] .hm::after{
               <option value="ocean">Reef — waves &amp; bubbles</option>
               <option value="arcade">Arcade — pixel corners &amp; lives</option>
               <option value="mono">Monochrome — grayscale art, halftone &amp; photo print</option>
+              <option value="jade">Jade — lantern, clouds &amp; seal</option>
+              <option value="ufo">Abduction — saucer, hills &amp; stars</option>
               <option value="none">None — just colors</option>
             </select>
           </div>
@@ -2172,12 +2259,21 @@ body[data-studio="blackcat"] .home[data-deco="on"] .hm::after{
         <button class="mini-btn" id="sm-size-48" title="48×48 pixels">48</button>
         <button class="mini-btn" id="sm-size-64" title="64×64 pixels">64</button>
       </div>
+      <div class="sm-tools">
+        <span class="hint" style="margin:0">Frames</span>
+        <div class="sm-frames" id="sm-frames"></div>
+        <button class="mini-btn" id="sm-frame-add" title="Add a frame (copies this one)">＋</button>
+        <button class="mini-btn" id="sm-play" title="Preview the loop">▶</button>
+        <select id="sm-delay" class="mini-btn" title="Frame speed" aria-label="Frame speed">
+          <option value="100">fast</option><option value="160" selected>medium</option><option value="300">slow</option>
+        </select>
+      </div>
       <button class="btn btn-primary" id="sm-save" style="width:100%;justify-content:center;margin-top:8px">Save sticker</button>
     </div>
     <div class="field" style="margin-top:10px"><label for="sm-upload">Or upload an image</label>
       <input type="file" id="sm-upload" accept="image/*">
     </div>
-    <div class="hint">Saved stickers join the tray — hover one and hit ✕ to remove it.</div>
+    <div class="hint">Saved stickers join the tray — hover one and hit ✕ to remove it. One frame saves a normal sticker; add frames and it saves as an animated one (exports hold frame 1). Animated WebP/APNG uploads work too.</div>
   </div>
 </div>
 
@@ -2364,6 +2460,12 @@ const MOTION_DEFAULTS = {
   mono:    [{target:"livedot",anim:"pulse",speed:1,amount:1,enabled:true},
             {target:"background",anim:"breathe",speed:1,amount:1.84,enabled:true}],
   cat:     [{target:"livedot",anim:"pulse",speed:1,amount:1,enabled:true}],
+  jade:    [{target:"livedot",anim:"pulse",speed:1,amount:1,enabled:true},
+            {target:"leaves",anim:"drift",speed:0.6,amount:0.8,enabled:true},
+            {target:"spikes",anim:"sway",speed:0.8,amount:0.7,enabled:true}],
+  ufo:     [{target:"livedot",anim:"pulse",speed:1,amount:1,enabled:true},
+            {target:"stars",anim:"twinkle",speed:1,amount:1,enabled:true,stagger:false},
+            {target:"planet",anim:"float",speed:0.7,amount:0.9,enabled:true}],
   none:    [{target:"livedot",anim:"pulse",speed:1,amount:1,enabled:true}],
 };
 
@@ -2382,7 +2484,46 @@ const REACTION_DEFAULTS = {
   arcade:  [{target:"sparkles",  signal:"beat",     effect:"pulse",    amount:1.2, smooth:0.2,  enabled:true}],
   mono:    [{target:"background",signal:"loudness", effect:"opacity",  amount:0.6, smooth:0.5,  enabled:true}],
   cat:     [{target:"spikes",    signal:"beat",     effect:"bounce",   amount:1,   smooth:0.25, enabled:true}],
+  jade:    [{target:"spikes",    signal:"beat",     effect:"bounce",   amount:0.9, smooth:0.25, enabled:true}],   // the lantern hops
+  ufo:     [{target:"stars",     signal:"treble",   effect:"twinkle",  amount:0.9, smooth:0.3,  enabled:true},
+            {target:"planet",    signal:"loudness", effect:"glow",     amount:1,   smooth:0.3,  enabled:true}],   // the saucer's beam breathes
   none:    [],
+};
+
+/* Shipped ANIMATED stickers (APNG + first-frame still pairs, generated pixel art - see CLAUDE.md).
+   One per default theme (minimal sits this one out on purpose). The palette renders these in their
+   own Animated group; jade/ufo's placed layouts reference them so the bytes live here exactly once. */
+const STICKER_ANIM = {
+  rex: {name:"Lil Stomper", loopMs:720,
+    img:"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGAAAABgCAYAAADimHc4AAAACGFjVEwAAAAEAAAAAHzNZtAAAAAaZmNUTAAAAAAAAABgAAAAYAAAAAAAAAAAALQD6AAAfSCY+wAAAOdJREFUeNrt17ENAjEQRcHrxJJLcAG0QDv0QExEQlNIBNcG8RLiCImENfY86acXeILVbZskSZIkSZI0SI/nHv28CAAAApDX4XqMXw4QAAAAAABwxAEAAABgPICI2PvVVqJfNsD0RxgAAAAAHGEAAAAAADAhQPYAAAAAAMC72srtmwEDAAAAAEd71QEAAAAAAA8IAAAAACsC1FZO/QAAAAAAwDoA5/slRh4AAAAAAAAAAAAAAABSftTi07K/BwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACYH1QAAAiAJEmSJEmSJEn6416qmeoegsOkSAAAABpmY1RMAAAAAQAAAGAAAABgAAAAAAAAAAAAtAPoAADmU3IvAAAA7GZkQVQAAAACeNrt17ENwjAQhtFsYskjeABWYB12oKaiYSkkiqxBfZRYihSJhrPi90l/m8KvOGVZJEmSJEmSJEmSknu91+jnRQAAEIC8Tvdz/HOAAAAAAACAIw4AAAAA4wFExNqvthL9sgEOf4QBAAAAwBEGAAAAAAAHBMgeAAAAAAD4Vlt5/DJgAAAAAOBozzoAAAAAAOABAQAAAGBGgNrKpR8AAAAAAJgH4Pq8xcgDAAAAAAAAAAAAAABAyo9a7C37ewAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACA8QAEAIAASJIkSZIkSZs+dnfqHqBpFq0AAAAaZmNUTAAAAAMAAABgAAAAYAAAAAAAAAAAALQD6AAAC8WhxgAAAOtmZEFUAAAABHja7dexDQIxEEXB68SSS3ABtEA79EBMREJTSATXBvES4giJhDX2POmnF3iC1W2bJEmSJEmSNEiP5x79vAgAAAKQ1+F6jF8OEAAAAAAAcMQBAAAAYDyAiNj71VaiXzbA9EcYAAAAABxhAAAAAAAwIUD2AAAAAADAu9rK7ZsBAwAAAABHe9UBAAAAAAAPCAAAAAArAtRWTv0AAAAAAMA6AOf7JUYeAAAAAAAAAAAAAAAAUn7U4tOyvwcAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAmB9UAAAIgCRJkiRJkiRJ+uNeqpnqHtCZMOMAAAAaZmNUTAAAAAUAAABgAAAAYAAAAAAAAAAAALQD6AAA5g/TvAAAAOxmZEFUAAAABnja7dexDcIwEIbRbGLJI3gAVmAddqCmomEpJIqsQX2UWIoUiYaz4vdJf5vCrzhlWSRJkiRJkiRJkpJ7vdfo50UAABCAvE73c/xzgAAAAAAAgCMOAAAAAOMBRMTar7YS/bIBDn+EAQAAAMARBgAAAAAABwTIHgAAAAAA+FZbefwyYAAAAADgaM86AAAAAADgAQEAAABgRoDayqUfAAAAAACYB+D6vMXIAwAAAAAAAAAAAAAAQMqPWuwt+3sAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgPEABACAAEiSJEmSJEmbPnZ36h73fZM7AAAAAElFTkSuQmCC",
+    still:"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGAAAABgCAYAAADimHc4AAAA50lEQVR42u3XsQ0CMRBFwevEkktwAbRAO/RATERCU0gE1wbxEuIIiYQ19jzppxd4gtVtmyRJkiRJkjRIj+ce/bwIAAACkNfheoxfDhAAAAAAAHDEAQAAAGA8gIjY+9VWol82wPRHGAAAAAAcYQAAAAAAMCFA9gAAAAAAwLvayu2bAQMAAAAAR3vVAQAAAAAADwgAAAAAKwLUVk79AAAAAADAOgDn+yVGHgAAAAAAAAAAAAAAAFJ+1OLTsr8HAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAJgfVAAACIAkSZIkSZIkSfrjXqqZ6h6Cw6RIAAAAAElFTkSuQmCC"},
+  cd: {name:"Y2K Disc", loopMs:600,
+    img:"data:image/png;base64,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",
+    still:"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGAAAABgCAYAAADimHc4AAABUElEQVR42u3dO47CMBRA0bAwFkWXNdCyB5aRlgr6ERuYgpKa0CILEXlij419rvQqGninMJ8AwyBJkiRJkiQV6nS5zjnHhgEAEIDvWfDv7b5qAAEAAABAvQtfu+DcQAAAAAAA4O8LL73g1EAAAAAAAOB7DtnmD2kAAAAAcOj2eygDAAAAQMGFzz/b8XVSP+D94bhqmjuUAQAAAKAigPAOhiBLE7vwpUqDAAAAAEDPALETgsQuPBYEAAAAAAAkfSE2pZzcAPPuMgYzrRkAAAAA6Bngv998S/1C7A3Ix2nuWRAAAAAAVHwhVm0fyIQgAAAAANATQOkLszbnxxjM9DqujAMAAACAdr6gES78ze1ZAbr/hgwAAAAAFDyUawMYag8AAAAAKgaJBcoN4BezAAAAAKAekKWFxwL45VwAAAAAaAfIHzgAAAAAgCRJkiRJkhTdEyHR8sp7f5erAAAAAElFTkSuQmCC"},
+  rocket: {name:"Blast Off", loopMs:600,
+    img:"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGAAAABgCAYAAADimHc4AAAACGFjVEwAAAAEAAAAAHzNZtAAAAAaZmNUTAAAAAAAAABgAAAAYAAAAAAAAAAAAJYD6AAAxiHknwAAASxJREFUeNrt3DFqwmAYx2EPUjyIELxDztClBHoNlw5OWe3iDQrduvQOhYzd7OYNXtfv+0BFTNMmeX7wnzII7zOELC4WkiRJkjSyomkinYsAACAAkiT9wksv4i3d0C/ZewcAAAAAAMb7oQUAAAAAAObT4ecYfc5FAQAQAAACAEAAxgew3H69Fot0AAAAAABgugCrdf14ywAAAAAAgA8xAAAAAAAAwEUBABCA/9P7S8Sl9Q1w7fcAAAAAAAAAAAAAAAAAAAAAAAAA/F2rdd32ORcFAEAAxlvsHj6ydVVkK567GAAAAjApgDZbV31nK567GAAAAjApgOdin8Wy573//sB/WggAAAAAAC6C7NN5SwIAIACzAtikcxEAAARgVgBP6VwEAAABkCRJkqSznQA5xf3BUeh2eAAAABpmY1RMAAAAAQAAAGAAAABgAAAAAAAAAAAAlgPoAABdUg5LAAABF2ZkQVQAAAACeNrt3L0JwlAYhtEMIg4iSHZwBjvBSSysbLVxA8HOxh0ESzvt3OCzzb2FIok/uZwH3ipF4DtFsLGqJEmSJEmSpJ4Us1k05yIAAAiAJEnlfWTbzkUBABCAFgeJ2DUHAAAAAAB8hD/V9XaPLueiAAAIAAABACAA/QMYLk+bbNEcAAAAAAAoF2BUT6bvDAAAAAAA+CEGAAAAAAAAuCgAAALwP+0XEc/WNcCr9wEAAAAAAAAAAAAAAAAAAAAAAAD4XaN6supyLgoAgAD0t1gPDsnO40iWPXcxAAAEoCiAVbLz+JIse+5iAAAIQFEA82zHbMlzFwMAQACKBtk29/H3fflPCwEAAAAAgCRJkiRJkjroAbAkt4HU3vAiAAAAGmZjVEwAAAADAAAAYAAAAGAAAAAAAAAAAACWA+gAALDE3aIAAAEtZmRBVAAAAAR42u3aPWoCURSGYRcSXIgwuAfXYCMD2YaNhZWtadxBIF0a9yBY2mnnDo7tvReMaAZ/rs8LXzWFcJ5iGLDX01VFxHc6FwEAQAAkSXrAS7FtI52LAAAgAJIk1feS/e9cFAAAAQAgAAAE4PnbH47R5VwUAAABACAAAATghg+jO/85tTxgf775KhbpAAAAAABAvS/hwXA0vmYAAAAAAMCHGAAAAAAAAOCiAAAIwPP0M4v4a10DXPo9AAAAAAAAAAAAAAAAAAAAAAAAAI9rMBwtupyLAgAgAK9bLD9+s22byFY8dzEAAASgKoBFtm2zy1Y8dzEAAASgKoDPYuti2XMXAwBAAKoGWaVzEQAABOCtAKbpXAQAAAF4K4BJOhcBAEAAJEmSJOlsJ4jG/cEBWrXeAAAAGmZjVEwAAAAFAAAAYAAAAGAAAAAAAAAAAACWA+gAAF0Or9gAAAEYZmRBVAAAAAZ42u3asQnCUBSGUQcRBwkEd3AGO8FJLKxstXEDwc7GHQRLO+3c4NrmPSEiRmPC+eCvUgj3CKI4GEiSJEmSaouIXXUuAgCAALR4kNksqvMWAQBAACRJ6t+H7KdzUQAABACAAAAQgP/vertHk3NRAAAEAIAAABCA7gGMlqdNtqgOAAAAAAB88cexH/85NT9gMZ5M3xkAAAAAAPBFDAAAAAAAAHBRAAAE4H/aLyLq1jTAq9cDAAAAAAAAAAAAAAAAAAAAAAAA0F7FeLJqci4KAIAAdLdYDw/JzmUky567GAAAAtArgFWyc3lJlj13MQAABKBXAPNsx2zJcxcDAEAAeg2yrc5FAAAQAEmSJEmSJOmpB/8lt4GFCpUpAAAAAElFTkSuQmCC",
+    still:"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGAAAABgCAYAAADimHc4AAABLElEQVR42u3cMWrCYBjHYQ9SPIgQvEPO0KUEeg2XDk5Z7eINCt269A6FjN3s5g1e1+/7QEVM0yZ5fvCfMgjvM4QsLhaSJEmSNLKiaSKdiwAAIACSJP3CSy/iLd3QL9l7BwAAAAAAxvuhBQAAAAAA5tPh5xh9zkUBABAAAAIAQADGB7Dcfr0Wi3QAAAAAAGC6AKt1/XjLAAAAAACADzEAAAAAAADARQEAEID/0/tLxKX1DXDt9wAAAAAAAAAAAAAAAAAAAAAAAAD8Xat13fY5FwUAQADGW+wePrJ1VWQrnrsYAAACMCmANltXfWcrnrsYAAACMCmA52KfxbLnvf/+wH9aCAAAAAAALoLs03lLAgAgALMC2KRzEQAABGBWAE/pXAQAAAGQJEmSpLOdADnF/cFR6HZ4AAAAAElFTkSuQmCC"},
+  sun: {name:"Retro Sun", loopMs:800,
+    img:"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGAAAABgCAYAAADimHc4AAAACGFjVEwAAAAEAAAAAHzNZtAAAAAaZmNUTAAAAAAAAABgAAAAYAAAAAAAAAAAAMgD6AAAQQKVNQAAAMpJREFUeNrt2UENgEAMRUGMIQEDSMEhqooCjrtt2nnJN9A5ELLHIUmSJEnJxXvdK+fCAAAIQOkDx+LNBgIAAACA3geeDQQAAAAADj4HBAAAAABqAUTzAQAAAMBYgIEHrwUCAAAAAAAAAAAAAMAGAAdPBgEAAAAAAAAAAAAAAAAABwYAwAAAMAAALON94DnD/rf+RcyRAQAwAAAMAADbDwAk+eAAAAAAUAhAkiRJkrr9qAEAAAAAgDkgPsoAAAAAIEmSJEmSJEmSGvUBpGR8RFtyhkUAAAAaZmNUTAAAAAEAAABgAAAAYAAAAAAAAAAAAMgD6AAA2nF/4QAAAMxmZEFUAAAAAnja7dlRDYAwDEXRGkMCBpCCQ1R1Cvjc1qznJs9Az8dCiJAkSZKkzeV3PzPnwgAACEDpA+fk9QYCAAAAgLMP3BsIAAAAABy8DwgAAAAA1ALIwwcAAAAAbQEaHrwWCAAAAAAAAAAAAAAACwAcfDMIAAAAAAAAAAAAAAAAADgwAAAGAIABAGA7/g+8V9r/5v8Rc2QAAAwAAAMAwNYDSJLkUS7y6AIAAACAN8GHFgAAAAAAcXAAAAAAkCRJkiRJkiRJkiQpYgADqSmTvMWmugAAABpmY1RMAAAAAwAAAGAAAABgAAAAAAAAAAAAyAPoAAA356wIAAAAz2ZkQVQAAAAEeNrt2UERgDAMRcEaQwIGkIJDVAUF3CgJzb6ZbyB7YIAxJEmSJCm5uPZj5lwYAAABKH3gmLzeQAAAAACw9oF7AwEAAACAg/cBAQAAAIBaALH4AAAAAKAtQMOD1wIBAAAAAAAAAAAAAOADAAdPBgEAAAAAAAAAAAAAAAAABwYAwAAAMAAALOP/wLmFPW/+HzFHBgDA8gAkSfJQLvLQBQAAAAAAAAAAAADAe4GPbQAAAAAgSZIkST/KixQAAAAASJIkSZIkSa93AwrKzvXxPtpAAAAAGmZjVEwAAAAFAAAAYAAAAGAAAAAAAAAAAADIA+gAANot3nIAAADOZmRBVAAAAAZ42u3aUQ2AMAxF0RlDAgaQgkNUFQV8jnXtuckz0POxkDCGJEmSJC0unvOaORcGAEAAUh84Jq83EAAAAADUPnBvIAAAAABw8D4gAAAAAJALIIoPAAAAANoCNDx4LhAAAAAAAAAAAAAAAH4AcPDFIAAAAAAAAAAAAAAAAADgwAAAGAAABgCAbfDjliSpTnEfYd8DAAAAgMoAQBYfHAAAAAAAAAAAAACABACSJEmStPuHGwAAAAAAqAvkFQYAQAAkSZIkSZLUsBfh0iG1KbTQzAAAAABJRU5ErkJggg==",
+    still:"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGAAAABgCAYAAADimHc4AAAAyklEQVR42u3ZQQ2AQAxFQYwhAQNIwSGqigKOu23aeck30DkQsschSZIkScnFe90r58IAAAhA6QPH4s0GAgAAAIDeB54NBAAAAAAOPgcEAAAAAGoBRPMBAAAAwFiAgQevBQIAAAAAAAAAAAAAwAYAB08GAQAAAAAAAAAAAAAAAAAHBgDAAAAwAAAs433gOcP+t/5FzJEBADAAAAwAANsPACT54AAAAABQCECSJEmSuv2oAQAAAACAOSA+ygAAAAAgSZIkSZIkSZIa9QGkZHxEW3KGRQAAAABJRU5ErkJggg=="},
+  fish: {name:"Reef Runner", loopMs:720,
+    img:"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGAAAABgCAYAAADimHc4AAAACGFjVEwAAAAEAAAAAHzNZtAAAAAaZmNUTAAAAAAAAABgAAAAYAAAAAAAAAAAALQD6AAAfSCY+wAAAQNJREFUeNrt2aENwlAUhtEOgWIEGIFNCJIpGIGQzoBEVOJr0bBEt7gYxGsFpaThhfac5HcIcj+SBigKAAAAAAAAAHipm9imcxEBBECASR/8ls5FBBAAAfiV42Z1TeciAgiAANMVVRnv5kICCIAAf/UQjZwTQAABBBAg40P1sIucG/sDJIAAAgggwOdvuHuQ9XLRWkTcWxs5wNADdr/4CSCAAAII8P3Bc6/vgH0//gkggAACCDAoyKmzfbrcAfoOLoAAAgggwIg/xj0uMeqq8txaz+uHfvEaGqBu4pxOAAEEEECA//1TfnIPYQEEEEAA5vOnvAAIIAAAAAAAAAAAAAAAc/QErC3MhEOcKBUAAAAaZmNUTAAAAAEAAABgAAAAYAAAAAAAAAAAALQD6AAA5lNyLwAAAQZmZEFUAAAAAnja7dm7DYJgGIZRh7ByBB3BTYylUziCMcxAaUFpT2utS7DFZ/vjjQQQDZyTvJ2Ffk/hbTYDAAAAgDfKKjbpXEQAARBg1Ae/pHMRAQRAAADg2w7r5TmdiwggAAKMVxRZfJoLCSAAAjDgh4BI5yICCIAA7V/A0Ov6IUAAAQQQQIAOX6z22/jlun7xE0AAAQQQoP2b7uNBVot5bRFxra3nAE/Pp+HgAggggAAC9HfwX6/pgF0DlFXk6QQQQAABphTgRZDjw3bp/i3A6H6ME0AAAQT4px/jbqfodUWW19bw+Mn/KS+AAAII4E/56RJAAAEEAAAAAAAAAAAAAAAAxuwO4iXMhHV1Pk0AAAAaZmNUTAAAAAMAAABgAAAAYAAAAAAAAAAAALQD6AAAC8WhxgAAAQhmZEFUAAAABHja7dmxDYJAFIBhhrByBB3BTYylUziCMcxgaUFpb2utS7jFsz2uEEguOZXvS16FBXm/yQVoGgAY6faKbTo2IoAACPDXC7+nYyMCCIAAAAAAAAAAlHLcrK7p2IgAAiDA/4qujU9jQwIIgAA/dYhGzRFAAAEEEKDioXrYRc0p/QfKr99ecU5HAAEEEGDOAfIbzheyXi56ExGP3hQOMPVQzh/8fu5QF0AAAQT4ooXXnqEFDr38E0AAAQQQYFKQUzb7dGoHGFq4AAIIIIAABV/GPS9RdLr23JuB30998BJAAAEEEGC+H+UFEEAAAQRg7Ed5BBAAAQAAAAAAAAAAAAD4Am87JMyEPpwlAAAAABpmY1RMAAAABQAAAGAAAABgAAAAAAAAAAAAtAPoAADmD9O8AAABBGZkQVQAAAAGeNrt2TEOwWAcxuEewuQIHMFNxOgUjiDiDB0NHe1WM5dwi7/1a4Um+qmmfZ7knYjw/QZVRQEAAAAAAAAAANCz/WpxTudEBBAAAcYrqmN8mhMSQAAEoMeLgEjXfPzyiDKdExNAAAR4/wH6XteLgK6vJ4AAAggw5QCx28Q/1/WHnwACCCCAAN9/6TYPZDmf1RYRt9oyB3h5Py0HLoAAAgggQL4D//faDlAAAQQQQICsQQ6NbdMNLcDobsYJIIAAAgzpZtz9FFlXHcvaWp7/6z/lBRBAAAGmFODyiHW6sf0pP3gCCCCAAP0e+DVdgQACIAAAAAAAAAAAAAAADM0TdMzMhGgP5ScAAAAASUVORK5CYII=",
+    still:"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGAAAABgCAYAAADimHc4AAABA0lEQVR42u3ZoQ3CUBSG0Q6BYgQYgU0IkikYgZDOgERU4mvRsES3uBjEawWlpOGF9pzkdwhyP5IGKAoAAAAAAAAAeKmb2KZzEQEEQIBJH/yWzkUEEAAB+JXjZnVN5yICCIAA0xVVGe/mQgIIgAB/9RCNnBNAAAEEECDjQ/Wwi5wb+wMkgAACCCDA52+4e5D1ctFaRNxbGznA0AN2v/gJIIAAAgjw/cFzr++AfT/+CSCAAAIIMCjIqbN9utwB+g4ugAACCCDAiD/GPS4x6qry3FrP64d+8RoaoG7inE4AAQQQQID//VN+cg9hAQQQQADm86e8AAggAAAAAAAAAAAAAABz9ASsLcyEQ5woFQAAAABJRU5ErkJggg=="},
+  invader: {name:"Pixel Invader", loopMs:1200,
+    img:"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGAAAABgCAYAAADimHc4AAAACGFjVEwAAAAEAAAAAHzNZtAAAAAaZmNUTAAAAAAAAABgAAAAYAAAAAAAAAAAASwD6AAAVwonjwAAAKVJREFUeNrt2LEJgDAURdHM4gKOIriQgzqMtmoTxJD8xHMglajwbpeUAAAAAAAAAAAAAKCQbV+O6+nt+wIIIIAAAsQZzOACCCCAAP0OPq/T7Tyf507ufYsLIAACxBk8N9DbAF//J4AAAgggQL3Box0BBBBAAAHqXa61HlgAAQQQQIA4AUb7vwACCCDAnwO0vqxLCCAAAgAAAAAAAAAAAAAAAAAwnhOy8IKqg3NbrwAAABpmY1RMAAAAAQAAAGAAAABgAAAAAAAAAAABLAPoAADMec1bAAAArGZkQVQAAAACeNrt2LENgCAUQEFmcQFHMXEhB3UYbZWGRFBA7pJfGTDyKgkBAAAAAAAAAAAAAAAg07Yvx3V6218AAQQQQIByB5B7YF+/TwABBBBAgOcfGD+f1+k28fPUpNYLIIAAAghQL0BqWlsvgAACCCBAvSBvz/CXcwIIIIAAAwUJCCAAAnRzWdf6/gIIIIAAAvRzIP6EBRBAAAEAAAAAAAAAAAAAAIAfOQGkUS2qXtHIeQAAABpmY1RMAAAAAwAAAGAAAABgAAAAAAAAAAABLAPoAAAh7x6yAAAAqWZkQVQAAAAEeNrt2LEJgDAURdHM4gKOIriQgzqMtmoTxJD8xHMglajwbpeUAAAAAAAAAAAAAKCQbV+O6+nt+wIIIIAAAsQZzOACCCCAAP0OPq/T7Tyf507ufYsLIAACxBk8N9DbAF//J4AAAgggQL3Box0BBBBAAAHqXa61HlgAAQQQQIA4AUb7vwACCCDAnwO0vqxLCCAAAgAAAAAAAAAAAAAAAAAwnhOy8IKq0fP3pwAAABpmY1RMAAAABQAAAGAAAABgAAAAAAAAAAABLAPoAADMJWzIAAAArGZkQVQAAAAGeNrt2LENgCAUQEFmcQFHMXEhB3UYbZWGRFBA7pJfGTDyKgkBAAAAAAAAAAAAAAAg07Yvx3V6218AAQQQQIByB5B7YF+/TwABBBBAgOcfGD+f1+k28fPUpNYLIIAAAghQL0BqWlsvgAACCCBAvSBvz/CXcwIIIIAAAwUJCCAAAnRzWdf6/gIIIIAAAvRzIP6EBRBAAAEAAAAAAAAAAAAAAIAfOQGkUS2qpC9rmgAAAABJRU5ErkJggg==",
+    still:"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGAAAABgCAYAAADimHc4AAAApUlEQVR42u3YsQmAMBRF0cziAo4iuJCDOoy2ahPEkPzEcyCVqPBul5QAAAAAAAAAAAAAoJBtX47r6e37AggggAACxBnM4AIIIIAA/Q4+r9PtPJ/nTu59iwsgAALEGTw30NsAX/8ngAACCCBAvcGjHQEEEEAAAepdrrUeWAABBBBAgDgBRvu/AAIIIMCfA7S+rEsIIAACAAAAAAAAAAAAAAAAADCeE7LwgqqDc1uvAAAAAElFTkSuQmCC"},
+  vinyl: {name:"Spinning Single", loopMs:600,
+    img:"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGAAAABgCAYAAADimHc4AAAACGFjVEwAAAAEAAAAAHzNZtAAAAAaZmNUTAAAAAAAAABgAAAAYAAAAAAAAAAAAJYD6AAAxiHknwAAAQVJREFUeNrt3bENgCAUQEEnsXAESysr91+EGbC10+SDIN5LKC3kCkIUnSZJkiRJkiTppbZtzy0HAAAAAABoN8HzvDQdwwMBAAAAgAn/DwgAAAAAfGjCc87HddTeeA0HAgAAAAAdATyY8PU63l6ko0AAAAAA8GeA0otabxuv6PUAAAAAAKDcDaaUQqM2CAAAAAAAKHdD0QmPggAAAAAAAAAAAAAAAKB/gLvrbcQAAAAAwCJsEQYAAAAAD2QAAAAAAIAXs7wZBwAAAADtF2UHNAAAAABgHIDaB6Md1AYAAACAcb8f5INNAAAAAOA7oiYcAAAAAPxfwA8cAAAAAECSJEmSJEkKdwK+8EUDS3lGbAAAABpmY1RMAAAAAQAAAGAAAABgAAAAAAAAAAAAlgPoAABdUg5LAAABDmZkQVQAAAACeNrt3bENhSAUQFEnsXCEX1pZuf8izMBv7dQ8EMRzEzot5BTEKDpNkiRJkiRJ0kOt65ZbDgAAAAAA0G6C53lpOoYHAgAAAAAT/h0QAAAAAHjRhOec9+OofeM1HAgAAAAAdARwYcJ/x/H0Ih0FAgAAAIAvA5Re1Hq78YqeDwAAAAAAyl1gSik0aoMAAAAAAIByFxSd8CgIAAAAAAAAAAAAAAAA+ge4ez4AAAAAALAIAwAAAACA9z+QOTveAxkAAAAA8GKWN+MAAAAAoL9F2QYNAAAAABgHoPbGaBu1AQAAAGDc7wf5YBMAAAAA+I6oCQcAAAAA/xfwAwcAAAAAkCRJkiRJksL9AfxVRQOzzyCvAAAAGmZjVEwAAAADAAAAYAAAAGAAAAAAAAAAAACWA+gAALDE3aIAAAEJZmRBVAAAAAR42u3duw2FIBiAUSexcARLKyv3X4QZsLU0+XmJ50voroWcgpAruiySJEmSJElSo47jzD0HAAAAAADoN8HrunUd0wMBAAAAgAn/DwgAAAAAfGjCc87Xc9TeeE0HAgAAAAADAbyY8P05Wi/SUSAAAAAA+DNA6UVttI1X9HoAAAAAAFDuBlNKoVEbBAAAAAAAlLuh6IRHQQAAAAAAAAAAAAAAADD+Riz6ewAAAAAAYBEGAAAAAAD+kAEAAAAAAB7M8mQcAAAAANRflB3QAAAAAIB5AGofjHZQGwAAAADmfX+QFzYBAAAAgPeImnAAAAAA8H0BH3AAAAAAAEmSJEmSJCncDbE8RQOrS8VuAAAAGmZjVEwAAAAFAAAAYAAAAGAAAAAAAAAAAACWA+gAAF0Or9gAAAERZmRBVAAAAAZ42u3duw2DMBRAUSahyAiUVKmy/yKewbRUEOn5g825krtQ8E5hofBZFkmSJEmSJKlR+/7NPRcAAAAAAOg34HX9dF3TAwEAAACAgb8HBAAAAAAGGnjO+XdetS+8pgMBAAAAgAcB/DHw7bxab9JRIAAAAAB4M0DpTe1pF17R4wEAAAAAQLkTTCldrrvf1wYBAAAAAADlTuhu4NEFAAAAAAAAAAAAAACA8QGiF24AAAAAAMAmDAAAAAAAxvtDJjpwAAAAAADgxix3xgEAAABA+03ZAxoAAAAAMA9A7QejPagNAAAAAPO+P8gLmwAAAADAe0QNHAAAAAB8X8AHHAAAAABAkiRJkiRJCncA1R1FA5wR6kIAAAAASUVORK5CYII=",
+    still:"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGAAAABgCAYAAADimHc4AAABBUlEQVR42u3dsQ2AIBRAQSexcARLKyv3X4QZsLXT5IMg3ksoLeQKQhSdJkmSJEmSJOmltm3PLQcAAAAAAGg3wfO8NB3DAwEAAACACf8PCAAAAAB8aMJzzsd11N54DQcCAAAAAB0BPJjw9TreXqSjQAAAAADwZ4DSi1pvG6/o9QAAAAAAoNwNppRCozYIAAAAAAAod0PRCY+CAAAAAAAAAAAAAAAAoH+Au+ttxAAAAADAImwRBgAAAAAPZAAAAAAAgBezvBkHAAAAAO0XZQc0AAAAAGAcgNoHox3UBgAAAIBxvx/kg00AAAAA4DuiJhwAAAAA/F/ADxwAAAAAQJIkSZIkSQp3Ar7wRQNLeUZsAAAAAElFTkSuQmCC"},
+  catnap: {name:"Catnap", loopMs:1040,
+    img:"data:image/png;base64,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",
+    still:"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGAAAABgCAYAAADimHc4AAABbElEQVR42u3cvW3CQBiAYfagiVJmBIbIAOnYAnkGT5AqpQdgBAo6FsgA0GUDpz1O5C4G2T5zzyt9Ff/3IB1YhtVKkiRJkpSsabuv1FghAAAEoCqQXThWBAAAAbAJCwAA1QBw2K77cJb+eE3bHVNT3DsCAAAAACbsY/Pah3P+fE/Oo4839v0P3XQBAAAAoGaAGyDHOaf6T0EAAAAAMOOC5zbJsWcoSNN2P6kp/mggAAAAAAC4GyC36QIAAAAAgPsBNm8vVzN0QYfe3iYMAAAAAOVuwmODjH1wDgAAAAAA/B+gv5z24cSXxydW5QBy9wcAAAAAAKo+GPc95QAAAABAzQA3QK6e4KMLetiu9+HMff0cOAAAAAAAAAAAAAAAAOoDmPpHgwAAAADwzAClT/x6p/6zEgAAAABYEkB/OS16cicVFP9FDAAAAAAA/DnxguZmcQfjAAAAAGBGkGebJZy8CwAAAACSJEmSJElS1C8PDkkR95i2KgAAAABJRU5ErkJggg=="},
+  dragon: {name:"Jade Dragon", loopMs:960,
+    img:"data:image/png;base64,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",
+    still:"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAYAAADDPmHLAAACJklEQVR42u3bMU4CQRSAYXoTC2NnwQ1svIa9pdfwAMbG3trKWFNZGUsOYWFCQrTjBms7+6KMIzOwsN+XvEoIMPObTCYwmQAAAAAAAAAAAACQ1X09L8PcpGOFBIAAEIAFONjPP+7/eAEIQAACEMCYA3DqHfkpWAACEIAABAAAwG9Wi1mXzsnFdJIOAkAACIDDEDf4+vW2WzdDDyIXsKAFIAABCEAAYw0gt+Hn91drJz4+LvjQA679/nf9+QUgAAEIQAAC+KvSDS8NYugBlwZ9cjHtTemGrxazh3QEIAABCEAAAtiVuAAvd0e9+Xi57E38e3z+0+fbPJ3aFy1xwVsHvOmsFrN5OoM7BApAAAIQgABGE0BcwLjB8ZCTm/j83IKWBlH7kFd7js9Oe9N13TKd+HgBCEAAAhCAAIZy8RM39B8XMb3nV7hoWbvh8ZCZe73cITYXcGkAQ7soE4AABCAAAYw3gLigcQFrv17uoqj04qV0Q+Lrlx5qt32IjAEKQAACEIAABNDqCxJxgRoEV3RRVHsBNz3Utt7w1WL2ns7WvyEjAAEIQAACOJgASr8gsekCtb4o2vSQV+H9PracH/bvMR0BCEAAAhCAAH5bwNINb37T1PiiqPYhb+8IQAACEIAARhNA6Y8Pt31Ian1RNPT3LwABCEAAAhDArpT+sGPfgrfhAhCAAAQgAAH8bwGtiAAQAAIAAAAAAAAAAAAAAAAAAAAAAACgmm9s5IkIWLhybQAAAABJRU5ErkJggg=="},
+  cow: {name:"Beam Me Up", loopMs:960,
+    img:"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAYAAADDPmHLAAAACGFjVEwAAAAGAAAAAAYNNbAAAAAaZmNUTAAAAAAAAACAAAAAgAAAAAAAAAAAAKAD6AAAFWRejQAAAo5JREFUeNrt3LFKHEEcB2DfQLDUVIf4ICl8CB8gpZax8AEsDuwklYWdvWXA1kZIkyIgKClCuEpOJOXY7o7LbeZ273b25vvBr7q75dj/Jwxz7mxtiYiIiIwwe7uT6ZA1AQAEAAFAhsnd3xCqDSE8Vhu/3ndzux+zeXipFgAAAAAAAAA2RdTe7iRU2zagk6eLWnf2t2tte73t+vH32bi/MAAAAAAAAIoFkHsufryFRY0HnNq265sAAAKAACDNefj5O+jyBQAAAAAAAIBc8+36NuhwBQAAAAAAAIB1/fgCQN4Aev9xCgAAAAAAgGIBxDn+eh4WNTx/qbXt/R8+P/08rXbtnx/591/5ohAAAAAAAIBiATQsOi51uA6+E2gIABgEAFosgNxzFq4uox62tPZ+dxAAAUAAEAAEAAFAAJBRAzht6agAzObhqFoTB0AAEAAM/L8HvlEgAAAAAAAAAKDURcgSGz9JG0O/wp/7agEAAAAAAABANmbgC5v68KXDpAEAAAAAAABgNBs/CxsP9N/rLKlAAAAAAAAAAEAZAA4mn2qd33yv1QQBEAAEAGneOMm9qYtAAAAAAAAAAACgeeCpNzS18aIsbupGTtcCAAAAAAAAAADNALoObNXXi7+/B0kAAAAAAAAAIE8AfRcAAAAAAAAAAMhjI2jdQBoAOHgSAAAAAAAAAHoA0bXxP2DE7Xp9h08DAAAAAAAAQD+Jb1jDDU96cKPr+1Ovl9tBk7N5eKkWAAAAAAAAAHId+KoHOgAAh08DAAAAAAAwSgCrXkT0fdBj6kbNEhs7vR4+DQAAAAAAAAAFL/oOC29ZIAAAAAAAAABgTQc7jqAAAAAAAAAA4MchERERERERERERERHpO+/lBvKljw+UHwAAABpmY1RMAAAAAQAAAIAAAACAAAAAAAAAAAAAoAPoAACOF7RZAAAClWZkQVQAAAACeNrt3bFKHEEABmDfQEipViI+SAofIg9gaUotfACLAztJZZEuvWXANk3AxkIQFAsRq2AIKcd2d7I6THb2dvb2++Gvbh33bj5hmLsb19ZEREREJpjNje3FmDUDAAgAAoCMk8unEJoNIdw2Gz9eurW9Hs8v4VOzAAAAAAAAANBjwF/NVrDoC82mJujz3WmrH3bWW009nho/vp+V+wsDAAAAAABgtgBqz+nVn/Be4wnObWp8MwCAACAASHd+Xj8E/f8CAAAAAAAAQK358vUi6HgFAAAAAAAAgGW9+QJA3QCKvzkFAAAAAADAbAHEOTg8Ce81LD4umk1dX/zn7/dbXfrvH/n+B18UAgAAAAAAMFsAHYuOMx2vo+8EmgQATAQAOlsAtec4nJ9FPUq0db1XEAABQACQlQGwlygAAAAAAAAAAADAPwBuwuOPZsd+frUd4AEAAAAAAAAAE9r4ydoYyv3QpUOkAAAAAAAAWOGDJKs6nXrZAP7+fs7qyoEAAAAAAABgtgAmuNHTq7kAdre3Wn359r1VMwiAACAASPfGSe3NXQQCAAAAAAAAAADdE577guY2XpTFzd3I6VsAAAAAAAAAAKAbQN8JG3o8EwoAAAAAAAAA0wBQugAAAAAAAAAAQB0bQcsGEt+/AyYAAAAAAAAAoAyIvo0/gBG37/gOmgQAAAAAAACAMkl9GTP1Zc7S1+eOBwQAAAAAAAAADAYg68ubfa/PHc/h0wAAAAAAAAAwDoD4MOfSB0JMDUBth3gBAAAAAAAAwFsTXuBgx9prUQgAAAAAAMAkAAz9T4kAAAAAAAAAAIDZLvr2Zt55gQAAAAAAAAAAAAAAAAAAAADAm0MiIiIiIiIiIiIiIjJUXgHjtWeTaQ1uywAAABpmY1RMAAAAAwAAAIAAAACAAAAAAAAAAAAAoAPoAABjgWewAAACf2ZkQVQAAAAEeNrt3LFKI0EcB2DfQLhSrwrig1jkIXwAS6/UwgewCNgFqyuuu97ywNZGsLEQBMVCJJVExHJsd+eC6+xusrPZ7we/KptN2P8XGGaTbGyIiIiI9DDbW6NJlzUBAAQAAUC6yeVLCMWGEO6LjR9vu7ldj9k87BcLAAAAAAAAAOsiantrFIqtGtCvh7NSf+xsllr1eNX54/ezdp8wAAAAAAAABgsg95zdvIevGg84tVXnNwEABAABQBbn+vYpaP0CAAAAAAAAQK45/3MRtLsCAAAAAAAAwKpuvgCQN4DWb04BAAAAAAAwWABxDo9Ow1cNk71JsVXH//f8x4NSk5/f9PV7/v6XvigEAAAAAABgsAAWLDqm2l073wk0BAAMAgAdLIDccxJ+T6MeV7R0vCsIgAAgAAgAdW62+PEoAAAAAAAAAGQDYFzRJAAfb7Oktg1iNg+vxZo4AAKAAGDg3x54EohUALujn6XO//4r1UcUAAFAAOhr2l6ExBc496YuAgEAAAAAAADAIrCdjZXUxouyuKkbOU0LAAAAAAAAAAAsBtB0YMs+n4ECAAAAAAAAQD8AtF0AAAAAAAAAACCPjaBVAwEAAAAAAAAAAJYDomnjL2DEbXp+fygBAAAAAAAAAKsBUfVDjraPTz0fEAAAAAAAAAAAAAAAAACAACDfT40/dix1wcBaPb5GgQAAAAAAAACAFQDIsAAAAAAAAAAAQD0A4563UwCzedgvFgAAAAAAAAAMfJggAAAAAAAAACCXRUTfNn7uwvNVsWu/MQQAAAAAAMBgAbjZ42YRAAAAAAAAANj4sTEEAAAAAAAAACIiIiIiIiIiIiIi0ot8AgGWilJ/eEONAAAAGmZjVEwAAAAFAAAAgAAAAIAAAAAAAAAAAACgA+gAAI5LFcoAAAKGZmRBVAAAAAZ42u3dv0ocQQAHYN9ASKlWEnwQCx8iD2CZlFr4ABYHdmKVIp29ZSCtjZAmhRBIsBCxEkUsx3Z3ctxkd/bP7O33g191e+O58wnD7O26sSEiIiIywWxv7S7GrBkAQAAQAGSc/HgIodoQwu9q49e7bmnn4/E5PFULAAAAAAAAABkDfqq2gEVfqDY1QV/+nNX64eNmranXU+PHn2ft/sIAAAAAAACYLYDSc/bzNaxqPMFNmxrfDAAgAAgAsjw3v+6Cti8AAAAAAAAAlJqLb1dBxysAAAAAAAAADHXxBYCyAXR+cQoAAAAAAIDZAojz+eg0rGr4e1hr6vh/3r/YX1Q7+Psn/vl7XxQCAAAAAAAwWwBLFh3nOl5H3wk0CQCYCAB0tgBKz0n4eh71INHa8bkbLW4cAQAAAAAAAIBiABwn2gjA28tjowIBAAAAAAAAAPMAsLe7U+vz5fdac3+/0h7gAQAAAAAAAABtE5/g0tt0Edg1gLULAAAAAAAAk0nuw4lzT2jTxouyuE03cnILAAAAAAAAABZ9ywHkTljf45lQAAAAAAAAAJgGgK4LAAAAAAAAAAD0AyB3kQcAAAAAAAAAAEwTRG7jL2DEzR0/9SVSAUAAEACkGxCpGz2WHL/yRpDU8f8xHgAAAAAAAAAAMAyArAntAQAQAAAAAAAAADAMgIMh2+LnAwAAAAAAAAAALdLi4c6lFwgAAAAAAAAAaAfgeOIFAAAAAAAAAADWAMBtuL+utnQAuQ/xAgAAAAAAAAAbPzaGAAAAAAAAmBeAvv8pEQAAAAAAAAAAYK9/pp0XCAAAAAAAAAAAAAAAAAAAAABcHBIRERERERERERERkb7yDqGVg3HXNfA/AAAAGmZjVEwAAAAHAAAAgAAAAIAAAAAAAAAAAACgA+gAAGPdxiMAAAKAZmRBVAAAAAh42u3csWrbQBwH4LxBoaOTyYQ8SIY+RB8gYzrGQx8ggyFb6JShW/aMgaxZAlkyFAopHUrwZFxKx8t6OkQUyWfrZH0/+E1WFKP/ZzhOtvb2RERERAaY/cl03mdNAAABQACQfnL3EkLcEMLPuOnruVva9ViswjIuAAAAAAAAAOyKqP3JNMRtGtCX54tKPx5+qLTp9abzp+9n5z5hAAAAAAAAjBZA6bl4/Bfeajrgtm06vwkAIAAIAFKfh6ffQbsXAAAAAAAAAErNt+83QfsrAAAAAAAAAGzr5gsAZQPIfnMKAAAAAACA0QJIc3p2Ht5qmB/P4zYdn/3vf51UuvX/3/P73/iiEAAAAAAAgNECqFl0XGp/7X0n0BAAMAgAdLQASs/XcHWZ9FNDK8e7ggAIAAKAANDlZosfjwIAAAAAAABAMQBmcX+EP/dx2wL4/3fRqrlBLFbhc1wTB0AAEAAMvH7gHVo5X1sAR9ODSlfXt5X6iAIgAAgAQ03uRUh6gUtv20UgAAAAAAAAAFgE5tlYadt0UZa27UbOugUAAAAAAAAAAOoBrDuwTZ/PQAEAAAAAAABgGAByFwAAAAAAAAAAKGMjaNtAAAAAAAAAAACAzYBYt+kXMNKue34PlAAAAAAAAACA7YBo+iFH7uPbng8IAAAAAAAAAAAAAAAAAEAAkPenw4MdK60ZWNbjax4q5eHTAAAAAAAAAFAAgAILAAAAAAAAAAB0AzAbeHsFsFiFZVwAAAAAAAAAMPBxggAAAAAAAACAUhYRO7jxs1sbQwAAAAAAALg3YOBAAAAAAAAAAICNHzuDAAAAAAAAACAiIiIiIiIiIiIiIiXnFX8awkLQZ2fwAAAAGmZjVEwAAAAJAAAAgAAAAIAAAAAAAAAAAACgA+gAAI6u938AAAKUZmRBVAAAAAp42u3dv4oTQQAH4LyBYKlXhcMHschD+ABXnqUWPoBFIF2wsrCzv1K41ka45gpBOLEQSSURsRzb3XEvw7j/Zne/H/yqbOaWzHcwTJLJaiUiIiIywTx+tN6OWTMAgAAgAMg4uf4RQrUhhC/Vxo933dJej8MxPKsWAAAAAAAAAFoM+LPaAhZ9odrUBD2/29X68PxBranHU+PH9zO7/zAAAAAAAAAWC6D07G5+h1ONJzi3qfHNAAACgAAgzfl0+y3o/xcAAAAAAAAASs2bd1dBxysAAAAAAAAADPXmCwBlA+j8zSkAAAAAAAAWCyDO5YvX4VTD9um22tT1/zz/60Wt2c9v+/cnfv+9LwoBAAAAAABYLICGRcdex+voO4EmAQATAYAuFkDpeRXe7qO+TLR2vVcQAAFAAJDZANgkCgAAAAAAAAAAAFA8gNIO8AAAAAAAAACACW38ZG0M5X7o0iFSAAAAAAAAzPggyaJOpx4awJ9fh6zODgQAAAAAAACLBTDBjZ5WzQXwZH1W6/H9h1rNIAACgAAgzRsnpTd3EQgAAAAAAAAAADRPeO4Lmtt4URY3dyOnbQEAAAAAAAAAgGYAbSes7/FMKAAAAAAAAABMA0DXBQAAAAAAAAAAytgIGhpIfP8OmAAAAAAAAACAbkC0bfwBjLhtx3fQJAAAAAAAAAB0k9SXMVNf5uz6+tzxgAAAAAAAAACA3gBkfXmz7fW54zl8GgAAAAAAAADGAdD3gRBTA1DaIV4AAAAAAAAAcN+Ed3CwY+m1KAQAAAAAAGASAPr+UaKxAXwO3z9WCwAAAAAAAAAADLbo2yy8ywIBAAAAAAAAAAAAAAAAAAAAgDeHRERERERERERERESkr/wFFLMsE/jdz+oAAAAASUVORK5CYII=",
+    still:"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAYAAADDPmHLAAACjklEQVR42u3csUocQRwHYN9AsNRUh/ggKXwIHyCllrHwASwO7CSVhZ29ZcDWRkiTIiAoKUK4Sk4k5djujstt5nbvdvbm+8Gvurvl2P8nDHPubG2JiIiIjDB7u5PpkDUBAAQAAUCGyd3fEKoNITxWG7/ed3O7H7N5eKkWAAAAAAAAADZF1N7uJFTbNqCTp4tad/a3a217ve368ffZuL8wAAAAAAAAigWQey5+vIVFjQec2rbrmwAAAoAAIM15+Pk76PIFAAAAAAAAgFzz7fo26HAFAAAAAAAAgHX9+AJA3gB6/3EKAAAAAACAYgHEOf56HhY1PH+pte39Hz4//Tytdu2fH/n3X/miEAAAAAAAgGIBNCw6LnW4Dr4TaAgAGAQAWiyA3HMWri6jHra09n53EAABQAAQAAQAAUAAkFEDOG3pqADM5uGoWhMHQAAQAAz8vwe+USAAAAAAAAAAoNRFyBIbP0kbQ7/Cn/tqAQAAAAAAAEA2ZuALm/rwpcOkAQAAAAAAAGA0Gz8LGw/03+ssqUAAAAAAAAAAQBkADiafap3ffK/VBAEQAAQAad44yb2pi0AAAAAAAAAAAKB54Kk3NLXxoixu6kZO1wIAAAAAAAAAAM0Aug5s1deLv78HSQAAAAAAAAAgTwB9FwAAAAAAAAAAyGMjaN1AGgA4eBIAAAAAAAAAegDRtfE/YMTten2HTwMAAAAAAABAP4lvWMMNT3pwo+v7U6+X20GTs3l4qRYAAAAAAAAAch34qgc6AACHTwMAAAAAADBKAKteRPR90GPqRs0SGzu9Hj4NAAAAAAAAAAUv+g4Lb1kgAAAAAAAAAGBNBzuOoAAAAAAAAADgxyEREREREREREREREek77+UG8qWPD5QfAAAAAElFTkSuQmCC"},
 };
 
 const THEMES = {
@@ -2469,7 +2610,36 @@ const THEMES = {
       { name:"Tuxedo", vars:{bg1:"#F2F2F4",bg2:"#D9D9DE",card:"#FFFFFF",ink:"#1A1A1E",sub:"#6B6B73",line:"#E4E4E8",accent:"#1A1A1E",accent2:"#B9B9C0",label:"#33333A",skin:"#23232A",spike:"#FFB8C6",scanBg:"#1A1A1E",scanInk:"#F2F2F4",playInk:"#FFFFFF",glow:"transparent"} },
       { name:"Midnight Prowl", vars:{bg1:"#1E1C24",bg2:"#100F14",card:"#191720",ink:"#EFEAF3",sub:"#9B93A4",line:"#302C3A",accent:"#B9D45C",accent2:"#7FA33E",label:"#C9E372",skin:"#2A2733",spike:"#B9D45C",scanBg:"#EFEAF3",scanInk:"#191720",playInk:"#16151A",glow:"transparent"} }
     ]
-  }
+  },
+  jade: {
+    name:"Jade Dragon", icon:"🐉", np:"NOW SOARING",
+    stickers:["🐉","🏮","🎋","🍵","🪷","⛩️","🌊","✨","🥟","🧧"],
+    /* ships with a PLACED layout (seeded via stickerLayoutFor when the user has never edited it) —
+       the animated dragon is the point of the theme. img+still pair per the animated-sticker rule. */
+    placed:[
+      {x:76,y:19,size:62,rot:8,img:STICKER_ANIM.dragon.img,anim:true,still:STICKER_ANIM.dragon.still,loopMs:STICKER_ANIM.dragon.loopMs,px:true},
+      {x:13,y:62,size:28,rot:-8,emoji:"🏮"},
+    ],
+    variants:[
+      { name:"Imperial Jade", vars:{bg1:"#E8F4EA",bg2:"#BFE3C8",card:"#F8FCF6",ink:"#1E3328",sub:"#4E6B58",line:"#CBE5D2",accent:"#2E8B57",accent2:"#C9A227",label:"#1F6B45",skin:"#3E8E63",spike:"#E8D9A0",scanBg:"#1E3328",scanInk:"#D7F0DC",playInk:"#FFFFFF",glow:"transparent"} },
+      { name:"Gilded Night", vars:{bg1:"#10241B",bg2:"#1C3A2C",card:"#163024",ink:"#EDF7EE",sub:"#9CC3AA",line:"#2C5240",accent:"#D4AF37",accent2:"#4FBF87",label:"#E8D9A0",skin:"#2E8B57",spike:"#C9A227",scanBg:"#EDF7EE",scanInk:"#10241B",playInk:"#10241B",glow:"rgba(212,175,55,.4)"} },
+      { name:"Crimson Silk", vars:{bg1:"#8C1F28",bg2:"#5A0F16",card:"#7A1A22",ink:"#FFE9C9",sub:"#E5B98A",line:"#A03540",accent:"#E8C15A",accent2:"#FF6B4A",label:"#F5D78E",skin:"#C0392B",spike:"#E8C15A",scanBg:"#FFE9C9",scanInk:"#5A0F16",playInk:"#3A0A0E",glow:"rgba(232,193,90,.35)"} },
+      { name:"River Mist", vars:{bg1:"#DFEEED",bg2:"#B8D8D4",card:"#F4FAF9",ink:"#23383A",sub:"#5A7476",line:"#CBE2DF",accent:"#4E9B8F",accent2:"#E0B84C",label:"#35726B",skin:"#6FB5A8",spike:"#EAF2E5",scanBg:"#23383A",scanInk:"#DFF0ED",playInk:"#FFFFFF",glow:"transparent"} },
+    ],
+  },
+  ufo: {
+    name:"Abduction", icon:"🛸", np:"NOW BEAMING",
+    stickers:["🛸","👽","🐄","🌌","⭐","🔭","🌾","👾","🌙","✨"],
+    placed:[
+      {x:77,y:17,size:64,rot:-6,img:STICKER_ANIM.cow.img,anim:true,still:STICKER_ANIM.cow.still,loopMs:STICKER_ANIM.cow.loopMs,px:true},
+      {x:12,y:22,size:22,rot:10,emoji:"⭐"},
+    ],
+    variants:[
+      { name:"Midnight Pasture", vars:{bg1:"#101326",bg2:"#1E2440",card:"#171B33",ink:"#E9ECFF",sub:"#9AA3CE",line:"#2C3357",accent:"#7CFF9E",accent2:"#FFE066",label:"#9BFFB4",skin:"#8A93A6",spike:"#9FD8FF",scanBg:"#E9ECFF",scanInk:"#101326",playInk:"#101326",glow:"rgba(124,255,158,.35)"} },
+      { name:"Neon Beam", vars:{bg1:"#1A0E2E",bg2:"#2C1550",card:"#221240",ink:"#F2E9FF",sub:"#B79FD8",line:"#3E2566",accent:"#C77DFF",accent2:"#7CFF9E",label:"#D8B4FF",skin:"#8A93A6",spike:"#9FD8FF",scanBg:"#F2E9FF",scanInk:"#1A0E2E",playInk:"#1A0E2E",glow:"rgba(199,125,255,.4)"} },
+      { name:"Dawn Sighting", vars:{bg1:"#FFF2DC",bg2:"#FFD9A8",card:"#FFFBF2",ink:"#3A2E1E",sub:"#7A6647",line:"#F2DFC2",accent:"#FF9F1C",accent2:"#7CC6FF",label:"#C77400",skin:"#B9C2D0",spike:"#FFE066",scanBg:"#3A2E1E",scanInk:"#FFEFD2",playInk:"#FFFFFF",glow:"transparent"} },
+    ],
+  },
 };
 
 const DEMO_TRACKS = [
@@ -3713,16 +3883,9 @@ function themeThumbHTML(vars,base,shape){
 }
 function renderThemes(){
   const g = $("themeGrid"); g.innerHTML="";
-  for(const key in THEMES){
-    const t=THEMES[key];
-    const b=document.createElement("button");
-    b.className="theme-card"+(state.theme===key?" on":"");
-    const vi=state.theme===key?state.variant:0;
-    b.innerHTML=themeThumbHTML(t.variants[Math.min(vi,t.variants.length-1)].vars,key,null)+`<span class="theme-name">${t.name}</span>`;
-    b.title=t.name+" · "+t.variants.length+" looks";
-    b.onclick=()=>chooseTheme(key);
-    g.appendChild(b);
-  }
+  /* YOUR themes + New first; the shipped defaults live in a collapsible group below (owner call —
+     eleven built-in tiles buried the personal stuff). Collapsed state persists; selecting a default
+     while collapsed force-opens it so the active tile is never invisible. */
   CUSTOM.forEach(c=>{
     const b=document.createElement("button");
     b.className="theme-card"+(state.theme==="custom"&&state.customName===c.name?" on":"");
@@ -3735,6 +3898,28 @@ function renderThemes(){
   add.innerHTML=`<span class="theme-thumb">＋</span><span class="theme-name">New theme</span>`;
   add.onclick=()=>{tbSnapshotCurrent();openBuilder()};
   g.appendChild(add);
+  const det=document.createElement("details");
+  det.className="tg-defaults";
+  const onDefault=!!THEMES[state.theme];
+  det.open = onDefault || safeStore.get("fs_tg_defaults")!=="0";
+  const sum=document.createElement("summary");
+  sum.textContent="Default themes · "+Object.keys(THEMES).length;
+  det.appendChild(sum);
+  const inner=document.createElement("div");
+  inner.className="tg-inner";
+  for(const key in THEMES){
+    const t=THEMES[key];
+    const b=document.createElement("button");
+    b.className="theme-card"+(state.theme===key?" on":"");
+    const vi=state.theme===key?state.variant:0;
+    b.innerHTML=themeThumbHTML(t.variants[Math.min(vi,t.variants.length-1)].vars,key,null)+`<span class="theme-name">${t.name}</span>`;
+    b.title=t.name+" · "+t.variants.length+" looks";
+    b.onclick=()=>chooseTheme(key);
+    inner.appendChild(b);
+  }
+  det.appendChild(inner);
+  det.addEventListener("toggle",()=>{ if(!THEMES[state.theme]) safeStore.set("fs_tg_defaults",det.open?"1":"0") });
+  g.appendChild(det);
 }
 function renderVariants(){
   const r=$("variantRow"); r.innerHTML="";
@@ -4034,14 +4219,14 @@ const MOTION_SEL = {
   livedot:    [{sel:".np-label .live-dot"}],
   dino:       [{sel:".dino-peek", theme:"dino"}],
   eyes:       [{sel:".blink", theme:"dino"}],
-  leaves:     [{sel:".leaf-corner", theme:"dino"}, {sel:".cat-tail", theme:"cat"}],
-  stars:      [{sel:".starfield i.tw", theme:"space"}],   // .tw only: buildStars marks every third star as the twinkling one
-  planet:     [{sel:".planet", theme:"space"}],
+  leaves:     [{sel:".leaf-corner", theme:"dino"}, {sel:".cat-tail", theme:"cat"}, {sel:".jade-clouds", theme:"jade"}],
+  stars:      [{sel:".starfield i.tw", theme:"space"}, {sel:".ufo-stars i.tw", theme:"ufo"}],   // .tw only: every third star twinkles
+  planet:     [{sel:".planet", theme:"space"}, {sel:".ufo-saucer", theme:"ufo"}],
   comet:      [{sel:".comet", theme:"space"}],
   glow:       [{sel:".dino-sun", theme:"dino"}, {sel:".retro-sun-deco", theme:"sunset"}],
   sparkles:   [{sel:".y2k-bubbles", theme:"y2k"}, {sel:".px-lives i.low", theme:"arcade"}, {sel:".cat-yarn", theme:"cat"}],
   background: [{sel:".mono-halftone", theme:"mono"}, {sel:".tide svg", theme:"ocean"}, {sel:".horizon-lines .dash", theme:"sunset"}],
-  spikes:     [{sel:".spike-row", theme:"dino"}, {sel:".cat-ears", theme:"cat"}],
+  spikes:     [{sel:".spike-row", theme:"dino"}, {sel:".cat-ears", theme:"cat"}, {sel:".jade-lantern", theme:"jade"}],
   gloss:      [{sel:".chrome-edge", theme:"y2k"}],
   art:        [{sel:".art-wrap .art"}],
   title:      [{sel:".f-title"}],
@@ -4711,6 +4896,19 @@ function renderStickerPalette(){
     b.onclick=()=>addSticker({art:k});
     g.appendChild(b);
   });
+  /* shipped animated stickers get their OWN group — the <img> holds the live APNG, so the palette
+     tile itself animates; placing one carries the full anim+still pair like any animated sticker */
+  if(typeof STICKER_ANIM!=="undefined"){ head("Animated");
+    for(const k in STICKER_ANIM){ const a=STICKER_ANIM[k];
+      const b=document.createElement("button");
+      b.title="Add "+a.name;
+      const im=document.createElement("img"); im.src=a.img; im.alt=""; im.draggable=false;
+      im.style.imageRendering="pixelated";
+      b.appendChild(im);
+      b.onclick=()=>addSticker({img:a.img,px:true,anim:true,still:a.still,loopMs:a.loopMs});
+      g.appendChild(b);
+    }
+  }
   if(typeof CUSTOM_STICKERS!=="undefined"&&CUSTOM_STICKERS.length){ head("Your tray · "+CUSTOM_STICKERS.length+"/24"); CUSTOM_STICKERS.forEach(cs=>{ // the user's own tray
     const b=document.createElement("button");
     b.title="Add your sticker";
@@ -4843,7 +5041,18 @@ function themeKey(){ return state.theme==="custom" ? "custom:"+(state.customName
 /* layouts are stored per theme AND layout ("dino@strip"); a layout without its own entry starts from
    the theme's base arrangement ("dino" — what older builds saved) and diverges once edited */
 function stickerKey(){ return themeKey()+"@"+(state.layout||"portrait") }
-function stickerLayoutFor(key){ const m=stkMap(); if(Array.isArray(m[key])) return m[key]; const base=m[key.split("@")[0]]; return Array.isArray(base)?base:null }
+function stickerLayoutFor(key){
+  const m=stkMap(); if(Array.isArray(m[key])) return m[key];
+  const baseKey=key.split("@")[0], base=m[baseKey];
+  if(Array.isArray(base)) return base;
+  /* built-ins may SHIP a placed layout (jade's dragon, ufo's cow — the animated sticker IS the theme).
+     Seeded only while the user has never edited: the first edit stores a real entry, which then wins —
+     including clear-all, which stores [] and correctly beats the seed. Fresh ids/z per seed. */
+  const t=typeof THEMES!=="undefined"&&THEMES[baseKey];
+  if(t&&Array.isArray(t.placed)&&t.placed.length)
+    return t.placed.map(s=>({...s, id:Date.now()+Math.random(), z:++state.zTop}));
+  return null;
+}
 function saveStickerLayout(){
   if(IS_WIDGET) return;
   const key=STK_KEY||stickerKey();
@@ -4851,7 +5060,10 @@ function saveStickerLayout(){
   clearTimeout(stkSaveT);
   stkSaveT=setTimeout(()=>{
     const m=stkMap();
-    if(list.length) m[key]=list; else delete m[key];
+    /* empty normally deletes the entry (tidy storage) — EXCEPT for themes that SHIP a placed layout,
+       where a stored [] is the user saying "no stickers" and must beat the seed in stickerLayoutFor */
+    const shipsLayout=typeof THEMES!=="undefined"&&THEMES[key.split("@")[0]]&&Array.isArray(THEMES[key.split("@")[0]].placed);
+    if(list.length) m[key]=list; else if(shipsLayout) m[key]=[]; else delete m[key];
     safeStore.set("fs_theme_stickers",JSON.stringify(m));
   },150);
 }
@@ -5088,8 +5300,8 @@ $("tip-close").addEventListener("click",()=>$("tipbar").remove());
 setTimeout(()=>{ const t=$("tipbar"); if(t) t.classList.add("fade") },14000); // the hint pill fades on its own
 
 /* ================= DIALOGS: theme builder + sticker maker ================= */
-function openBuilder(){ const m=$("builderModal"); if(!m) return; m.hidden=false; setTimeout(()=>{ const n=$("tb-name"); if(n&&!n.value) n.focus() },50) }
-function closeBuilder(){ const m=$("builderModal"); if(m) m.hidden=true }
+function openBuilder(){ const m=$("builderModal"); if(!m) return; m.hidden=false; document.body.classList.add("builder-open"); setTimeout(()=>{ const n=$("tb-name"); if(n&&!n.value) n.focus() },50) }
+function closeBuilder(){ const m=$("builderModal"); if(m) m.hidden=true; document.body.classList.remove("builder-open") }
 function openStickerMaker(){ const m=$("stickerMaker"); if(m) m.hidden=false }
 function closeStickerMaker(){ const m=$("stickerMaker"); if(m) m.hidden=true }
 $("tb-close").addEventListener("click",closeBuilder);
@@ -7579,7 +7791,7 @@ async function tbImportPayload(d, opts){
   opts = opts || {};
   if(!d || typeof d!=="object") throw new Error("not a theme payload");
   {
-    const base=["dino","minimal","y2k","space","sunset","ocean","arcade","mono","cat","none"].includes(d.b)?d.b:"none";
+    const base=["dino","minimal","y2k","space","sunset","ocean","arcade","mono","cat","jade","ufo","none"].includes(d.b)?d.b:"none";
     const rawVars=(d.v&&typeof d.v==="object")?d.v:{};
     const vars={}; TB_COLORS.forEach(([k])=>{
       const raw=rawVars[k];
@@ -8137,13 +8349,30 @@ async function cmNetReport(row){
    HARDENED after a friend's uploads "vanished" (they never reached the database at all): every refusal now
    says exactly WHY and what to do, the 64KB data cap is checked BEFORE the insert with a way out, and a
    successful publish jumps to the *mine* feed so the publisher SEES their pending row land. */
-async function cmNetPublish(){
+/* Publish shares ANY of your saved themes, not just the selected one: the button toggles a picker of
+   your customs (current one badged), each row publishing directly. */
+function cmNetPublish(){
   if (!SB || !CM_SESSION){ toast("Sign in with Discord to publish"); return }
-  const d = (typeof activeCustom === "function" && activeCustom()) || null;
-  if (!d){
-    toast("Publish shares one of YOUR custom themes — built-ins can't be published (everyone already has them). Make one in the theme builder (New theme → Save), select it, then publish.", 7000);
+  const pick = $("cmThemePick"); if (!pick) return;
+  if (!pick.hidden){ pick.hidden = true; return }
+  if (!CUSTOM.length){
+    toast("Publish shares YOUR custom themes — built-ins can't be published (everyone already has them). Make one first: theme grid → ＋ New theme → Save.", 7000);
     return;
   }
+  const cur = (typeof activeCustom === "function" && activeCustom()) || null;
+  pick.innerHTML = '<span class="hint" style="margin:0">Pick one of your themes to publish:</span>'
+    + '<div class="cm-pick-list">' + CUSTOM.map((c, i) =>
+        '<button data-pub-theme="' + i + '">' + themeThumbHTML(c.vars, c.base, c.shape)
+        + '<span>' + esc(c.name) + (cur && cur.name === c.name ? ' <i class="cm-status s-approved">current</i>' : "") + '</span></button>').join("") + '</div>';
+  pick.hidden = false;
+  pick.onclick = async e => {
+    const b = e.target.closest("button[data-pub-theme]"); if (!b) return;
+    pick.hidden = true;
+    await cmNetPublishTheme(CUSTOM[+b.dataset.pubTheme]);
+  };
+}
+async function cmNetPublishTheme(d){
+  if (!SB || !CM_SESSION || !d) return;
   const name = String(d.name).slice(0, 40);
   /* republishing the same name would just stack duplicates in the moderation queue */
   const dup = await SB.from("themes").select("id,status").eq("owner", CM_SESSION.user.id).eq("name", name).neq("status", "rejected").limit(1);
@@ -8321,10 +8550,10 @@ function cmNetRenderBar(){
         '<button data-feed="' + f + '"' + (CM_FEED === f ? ' class="on"' : "") + '>' + f
         + (f === "queue" ? '<i class="cm-badge" id="cmQueueBadgeN" hidden></i>' : "") + "</button>").join("")
     + '</div><span class="spacer"></span>'
-    + (meChip ? meChip + '<button class="mini-btn" id="cmPublish">Publish current</button>'
+    + (meChip ? meChip + '<button class="mini-btn primary" id="cmPublish">Publish…</button>'
              + '<button class="mini-btn" id="cmSignOut">Sign out</button>'
            : '<button class="mini-btn primary" id="cmSignIn">Sign in with Discord</button>')
-    + '</div><div class="cm-grid" id="cmNetBody"></div>';
+    + '</div><div class="cm-stk-pick" id="cmThemePick" hidden></div><div class="cm-grid" id="cmNetBody"></div>';
   const si = $("cmSignIn"); if (si) si.onclick = cmSignIn;
   const so = $("cmSignOut"); if (so) so.onclick = cmSignOut;
   const pub = $("cmPublish"); if (pub) pub.onclick = cmNetPublish;
@@ -8833,12 +9062,15 @@ const SM_SWATCHES=["#22321F","#3E9B4F","#9ADFA3","#FFC94D","#FF7A3D","#E4442E","
     if(n===SM.n) return;
     if(!silent) SM.pushUndo();
     const keep=document.createElement("canvas"); keep.width=SM.n; keep.height=SM.n; keep.getContext("2d").drawImage(cv,0,0);
+    /* every stored FRAME rescales with the grid — a stale-size ImageData would throw on putImageData */
+    if(typeof SM.framesRescale==="function") SM.framesRescale(SM.n,n);
     SM.n=n; cv.width=n; cv.height=n; ctx.imageSmoothingEnabled=false; ctx.drawImage(keep,0,0,n,n);
     SM_SIZES.forEach(sz=>$("sm-size-"+sz).classList.toggle("on",n===sz));
   };
   SM.loadImage=(src,px)=>{ // remix a tray sticker: draw it into the grid
     const im=new Image();
     im.onload=()=>{ SM.pushUndo(); ctx.clearRect(0,0,SM.n,SM.n); ctx.imageSmoothingEnabled=!px; ctx.drawImage(im,0,0,SM.n,SM.n); ctx.imageSmoothingEnabled=false;
+      if(typeof SM.framesReset==="function") SM.framesReset(); // a remix starts a fresh single-frame session
       openStickerMaker(); toast("Sticker loaded into the doodle canvas — edit and save as new") };
     im.src=src;
   };
@@ -8926,15 +9158,74 @@ const SM_SWATCHES=["#22321F","#3E9B4F","#9ADFA3","#FFC94D","#FF7A3D","#E4442E","
     pal.appendChild(b);
   });
 
-  // save: upscale with smoothing off so the pixels stay chunky everywhere (incl. exports)
-  $("sm-save").addEventListener("click",()=>{
-    const d=ctx.getImageData(0,0,SM.n,SM.n).data;
-    let any=false; for(let i=3;i<d.length;i+=4){ if(d[i]>0){any=true;break} }
-    if(!any){ toast("Doodle something first ✏️"); return }
-    const out=document.createElement("canvas"); out.width=SM.out; out.height=SM.out;
-    const c2=out.getContext("2d"); c2.imageSmoothingEnabled=false;
-    c2.drawImage(cv,0,0,SM.out,SM.out);
-    addCustomSticker(out.toDataURL("image/png"),true);
+  /* ================= FRAMES: the maker can ANIMATE =================
+     One frame = the classic still. More = the save assembles a real APNG client-side (frame 1 doubles
+     as the export still, same pair rule as uploads). The store is extra ImageDatas; the canvas is always
+     the LIVE frame, swapped in and out on selection. Capped at 12 frames so delay*frames can never pass
+     the 6s loop cap the validator enforces. */
+  let FR=[], FI=0, playT=null;                    // FR[FI] is stale while the canvas is live — sync on switch
+  const frSync=()=>{ FR[FI]=ctx.getImageData(0,0,SM.n,SM.n) };
+  const frLoad=i=>{ frSync(); FI=i; ctx.clearRect(0,0,SM.n,SM.n); ctx.putImageData(FR[FI],0,0); frPaint() };
+  const frPaint=()=>{
+    const box=$("sm-frames"); if(!box) return;
+    frSync(); box.innerHTML="";
+    FR.forEach((img,i)=>{
+      const t=document.createElement("canvas"); t.width=SM.n; t.height=SM.n; t.className="sm-fr"+(i===FI?" on":"");
+      t.getContext("2d").putImageData(img,0,0);
+      t.title="Frame "+(i+1)+(FR.length>1?" — right-click deletes":"");
+      t.addEventListener("click",()=>{ smPlayStop(); frLoad(i) });
+      t.addEventListener("contextmenu",e=>{ e.preventDefault(); if(FR.length<2) return; smPlayStop();
+        FR.splice(i,1); if(FI>=FR.length) FI=FR.length-1;
+        ctx.clearRect(0,0,SM.n,SM.n); ctx.putImageData(FR[FI],0,0); frPaint(); });
+      box.appendChild(t);
+    });
+  };
+  const smPlayStop=()=>{ if(playT){ clearInterval(playT); playT=null; $("sm-play").textContent="▶";
+    ctx.clearRect(0,0,SM.n,SM.n); ctx.putImageData(FR[FI],0,0); } };
+  SM.framesReset=()=>{ smPlayStop(); FR=[ctx.getImageData(0,0,SM.n,SM.n)]; FI=0; frPaint() };
+  SM.framesRescale=(from,to)=>{ smPlayStop();
+    FR=FR.map(img=>{ const s=document.createElement("canvas"); s.width=from; s.height=from;
+      s.getContext("2d").putImageData(img,0,0);
+      const d=document.createElement("canvas"); d.width=to; d.height=to;
+      const g=d.getContext("2d"); g.imageSmoothingEnabled=false; g.drawImage(s,0,0,to,to);
+      return g.getImageData(0,0,to,to); });
+  };
+  FR=[ctx.getImageData(0,0,SM.n,SM.n)];
+  frPaint();
+  $("sm-frame-add").addEventListener("click",()=>{
+    smPlayStop();
+    if(FR.length>=12){ toast("12 frames is the cap — that's a 6s loop at the slowest speed"); return }
+    frSync(); FR.splice(FI+1,0,ctx.getImageData(0,0,SM.n,SM.n)); frLoad(FI+1);
+  });
+  $("sm-play").addEventListener("click",()=>{
+    if(playT){ smPlayStop(); return }
+    if(FR.length<2){ toast("Add a frame first (＋)"); return }
+    frSync(); let p=FI; $("sm-play").textContent="⏸";
+    playT=setInterval(()=>{ p=(p+1)%FR.length; ctx.clearRect(0,0,SM.n,SM.n); ctx.putImageData(FR[p],0,0) }, +$("sm-delay").value||160);
+  });
+  cv.addEventListener("pointerdown",()=>smPlayStop());               // editing always edits the SELECTED frame
+
+  // save: one frame = the classic chunky PNG; more = assemble an APNG and store the pair
+  $("sm-save").addEventListener("click",async()=>{
+    smPlayStop(); frSync();
+    const anyInk=img=>{ for(let i=3;i<img.data.length;i+=4) if(img.data[i]>0) return true; return false };
+    if(!FR.some(anyInk)){ toast("Doodle something first ✏️"); return }
+    const up=img=>{ const src=document.createElement("canvas"); src.width=SM.n; src.height=SM.n;
+      src.getContext("2d").putImageData(img,0,0);
+      const out=document.createElement("canvas"); out.width=SM.out; out.height=SM.out;
+      const c2=out.getContext("2d"); c2.imageSmoothingEnabled=false; c2.drawImage(src,0,0,SM.out,SM.out);
+      return out; };
+    if(FR.length===1){ addCustomSticker(up(FR[0]).toDataURL("image/png"),true); return }
+    try{
+      const delay=+$("sm-delay").value||160;
+      const frames=FR.map(f=>up(f).getContext("2d").getImageData(0,0,SM.out,SM.out));
+      const bytes=await smApngBuild(frames,SM.out,SM.out,delay);
+      /* our own output goes through the SAME validator uploads do — self-checking by construction */
+      const v=typeof validateStickerImage==="function"?validateStickerImage(bytes,bytes.length):{ok:true,animated:true,loopMs:delay*FR.length};
+      if(!v.ok||!v.animated){ toast("Couldn't assemble the animation ("+(v.reason||"validation failed")+")",5000); return }
+      let b64=""; const CH=32768; for(let i=0;i<bytes.length;i+=CH) b64+=String.fromCharCode.apply(null,bytes.subarray(i,i+CH));
+      addCustomSticker("data:image/png;base64,"+btoa(b64),true,{anim:true,still:up(FR[0]).toDataURL("image/png"),loopMs:v.loopMs||delay*FR.length});
+    }catch(e){ toast("Couldn't assemble the animation: "+e.message,5000) }
   });
 
   // upload: fit into a 192 box, keep aspect + alpha, never enlarge
@@ -8945,6 +9236,54 @@ const SM_SWATCHES=["#22321F","#3E9B4F","#9ADFA3","#FFC94D","#FF7A3D","#E4442E","
     rd.readAsDataURL(f);
   });
 })();
+/* ================= APNG ASSEMBLY (client-side) =================
+   The same chunk layout tools/check-motion.js validates: acTL BEFORE the first IDAT, fcTL per frame,
+   frames 2+ as fdAT with a shared sequence counter. Deflate comes from CompressionStream("deflate") —
+   that variant IS zlib-wrapped (RFC1950), which PNG requires; "deflate-raw" would not decode. */
+const SM_CRC=(()=>{const t=[];for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xedb88320^(c>>>1):c>>>1;t[n]=c>>>0}return t})();
+function smCrc32(u){let c=0xffffffff;for(let i=0;i<u.length;i++)c=SM_CRC[(c^u[i])&0xff]^(c>>>8);return (c^0xffffffff)>>>0}
+function smChunk(type,data){
+  const out=new Uint8Array(12+data.length); const dv=new DataView(out.buffer);
+  dv.setUint32(0,data.length);
+  for(let i=0;i<4;i++) out[4+i]=type.charCodeAt(i);
+  out.set(data,8);
+  dv.setUint32(8+data.length,smCrc32(out.subarray(4,8+data.length)));
+  return out;
+}
+async function smDeflate(u){
+  const cs=new CompressionStream("deflate");
+  const w=cs.writable.getWriter(); w.write(u); w.close();
+  const chunks=[]; const rd=cs.readable.getReader();
+  for(;;){ const {done,value}=await rd.read(); if(done) break; chunks.push(value) }
+  let n=0; chunks.forEach(c=>n+=c.length);
+  const out=new Uint8Array(n); let o=0; chunks.forEach(c=>{out.set(c,o);o+=c.length});
+  return out;
+}
+async function smApngBuild(frames,w,h,delayMs){
+  const ihdr=new Uint8Array(13); const iv=new DataView(ihdr.buffer);
+  iv.setUint32(0,w); iv.setUint32(4,h); ihdr[8]=8; ihdr[9]=6;
+  const raw=img=>{ const rows=new Uint8Array(h*(1+w*4));
+    for(let y=0;y<h;y++){ rows[y*(1+w*4)]=0; rows.set(img.data.subarray(y*w*4,(y+1)*w*4), y*(1+w*4)+1) }
+    return rows; };
+  let seq=0;
+  const fctl=()=>{ const d=new Uint8Array(26); const v=new DataView(d.buffer);
+    v.setUint32(0,seq++); v.setUint32(4,w); v.setUint32(8,h); v.setUint16(20,delayMs); v.setUint16(22,1000);
+    return smChunk("fcTL",d); };
+  const actl=new Uint8Array(8); new DataView(actl.buffer).setUint32(0,frames.length);
+  const parts=[new Uint8Array([137,80,78,71,13,10,26,10]), smChunk("IHDR",ihdr), smChunk("acTL",actl),
+    fctl(), smChunk("IDAT",await smDeflate(raw(frames[0])))];
+  for(let i=1;i<frames.length;i++){
+    parts.push(fctl());
+    const idat=await smDeflate(raw(frames[i]));
+    const fd=new Uint8Array(4+idat.length); new DataView(fd.buffer).setUint32(0,seq++); fd.set(idat,4);
+    parts.push(smChunk("fdAT",fd));
+  }
+  parts.push(smChunk("IEND",new Uint8Array(0)));
+  let n=0; parts.forEach(p=>n+=p.length);
+  const out=new Uint8Array(n); let o=0; parts.forEach(p=>{out.set(p,o);o+=p.length});
+  return out;
+}
+
 /* Decode a data URL's payload so the byte sniffer can look at the real container. */
 function smBytes(dataURL){
   try{

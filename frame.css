@@ -151,7 +151,9 @@ button,input,select{font-family:inherit;color:inherit}button{cursor:pointer;back
 .frame[data-layout="strip"] .leaf-corner,.frame[data-layout="strip"] .paw-trail,.frame[data-layout="strip"] .planet,.frame[data-layout="strip"] .dino-sun,
 .frame[data-layout="strip"] .retro-sun-deco,.frame[data-layout="strip"] .horizon-lines,.frame[data-layout="strip"] .px-lives,
 .frame[data-layout="strip"] .y2k-bubbles,.frame[data-layout="strip"] .pills,.frame[data-layout="strip"] .orbit,.frame[data-layout="strip"] .tide,
-.frame[data-layout="strip"] .cat-tail,.frame[data-layout="strip"] .cat-yarn{display:none !important}
+.frame[data-layout="strip"] .cat-tail,.frame[data-layout="strip"] .cat-yarn,
+.frame[data-layout="strip"] .jade-clouds,.frame[data-layout="strip"] .jade-lantern,.frame[data-layout="strip"] .jade-seal,.frame[data-layout="strip"] .jade-lines,
+.frame[data-layout="strip"] .ufo-hills,.frame[data-layout="strip"] .ufo-saucer{display:none !important}
 /* strip is 560×130 — the ears shrink and tuck in rather than eating the whole top edge */
 .frame[data-layout="strip"] .cat-ears{width:54px;height:19px;right:10px}
 
@@ -177,7 +179,9 @@ button,input,select{font-family:inherit;color:inherit}button{cursor:pointer;back
 
 /* ============ THEME DECOR ============ */
 .deco{position:absolute;pointer-events:none}
-[data-theme] .only-dino,[data-theme] .only-y2k,[data-theme] .only-space,[data-theme] .only-minimal,[data-theme] .only-sunset,[data-theme] .only-ocean,[data-theme] .only-arcade,[data-theme] .only-mono,[data-theme] .only-cat{display:none}
+[data-theme] .only-dino,[data-theme] .only-y2k,[data-theme] .only-space,[data-theme] .only-minimal,[data-theme] .only-sunset,[data-theme] .only-ocean,[data-theme] .only-arcade,[data-theme] .only-mono,[data-theme] .only-cat,[data-theme] .only-jade,[data-theme] .only-ufo{display:none}
+[data-theme="jade"] .only-jade{display:block}
+[data-theme="ufo"] .only-ufo{display:block}
 [data-theme="cat"] .only-cat{display:block}
 [data-theme="mono"] .only-mono{display:block}
 [data-theme="dino"] .only-dino{display:block}
@@ -243,6 +247,23 @@ button,input,select{font-family:inherit;color:inherit}button{cursor:pointer;back
   background:none;-webkit-background-clip:initial;background-clip:initial;
   color:var(--f-accent);filter:none;
 }
+/* jade — a scroll painting: double gold mount lines, auspicious clouds, a hanging lantern, a seal */
+.jade-lines{inset:7px;border:1px solid var(--f-accent2);opacity:.4;border-radius:18px;pointer-events:none}
+.jade-lines::after{content:"";position:absolute;inset:3px;border:1px solid var(--f-accent2);opacity:.65;border-radius:14px}
+.jade-clouds{left:10px;bottom:58px;width:150px;z-index:0}
+.jade-lantern{top:0;right:24px;width:26px;height:46px;z-index:2;transform-origin:50% 0;--m-pre:none}
+.jade-seal{right:16px;bottom:16px;width:20px;height:20px;z-index:0;opacity:.85}
+.frame[data-layout="square"] .jade-clouds{bottom:44px;width:120px}
+.frame[data-layout="square"] .jade-seal{bottom:12px}
+/* ufo — night pasture: sparse stars, rolling hills with a crop circle, a scouting saucer */
+.ufo-stars{inset:0;z-index:0}
+.ufo-stars i{position:absolute;width:2.5px;height:2.5px;border-radius:50%;background:var(--f-sub);opacity:.75}
+.ufo-hills{left:0;right:0;bottom:0;height:56px;z-index:0}
+.ufo-hills svg{width:100%;height:100%;display:block}
+.ufo-saucer{top:2px;left:10px;width:58px;height:50px;z-index:2;--m-pre:none}
+.frame[data-layout="square"] .ufo-saucer{width:46px}
+.frame[data-layout="square"] .ufo-hills{height:42px}
+
 /* space */
 .starfield{inset:0}
 .starfield i{position:absolute;width:2.5px;height:2.5px;border-radius:50%;background:#fff;opacity:.85}
